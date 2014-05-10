@@ -1,0 +1,69 @@
+\documentclass{article}
+\usepackage{fullpage, amsmath, graphicx}
+\usepackage{algpseudocode, algorithm}
+
+\title{One-Dimensional Blood Flow Solver}
+\author{self}
+\date{in preparation}
+
+\begin{document}
+\maketitle
+
+\section*{Array management in the simulation}
+The primary data arrays that are being updated dynamically in the simulation have been named as follows:
+\begin{itemize}
+\item \verb+solA, solQ+ - main solution arrays that store \verb+nsteps+ rows and \verb+nodes+ columns of solutions for $A$ and $Q$ for total duration of one cardiac cycle
+\item \verb+solA_m, solQ_m+ - arrays that store \verb+nsteps+ rows of data for the solution at the end point $X(\verb+nnodes+)$ in 2 columns (column 1 is correspond to the solutions from the previous cardiac poeriod, and column 2 from the current cardiac period).
+\item \verb+solA_mm1, solQ_mm1+ - same as above, except that they store the solutions at the last interior node i.e. $X(\verb+nnodes+-1)$
+\item \verb+solA_mphalf, solQ_mphalf+ - same as above, except that they store the solutions at the node $X(\verb+nnodes+ + 1/2)$.
+\end{itemize}
+
+The total simulation time is taken to be an integer multiple of cardiac period $\verb+numPeriods+ \times \verb+Tcard+$. Thereafter, each cardiac period is assumed to be divided into \verb+nsteps+ divisions. For iterative solution of the outflow boundary condition terms, the solution arrays need to be correctly updated so that appropriate components of solutions from previous and current time-steps are always tracked. The implementation of this in form of a pseudocode is presented below:
+
+\begin{algorithm}
+\caption{Array management in loops}
+\begin{algorithmic}[1]
+\For{ \text{( \textit{number of periods} )} }
+
+	\State \verb+solA_m(:,1)+ $\gets$ \verb+solA_m(:,2)+
+	\State \verb+solQ_m(:,1)+ $\gets$ \verb+solQ_m(:,2)+
+	\State \verb+solA_mm1(:,1)+ $\gets$ \verb+solA_mm1(:,2)+
+	\State \verb+solQ_mm1(:,1)+ $\gets$ \verb+solQ_mm1(:,2)+
+	\State \verb+solA_mphalf(:,1)+ $\gets$ \verb+solA_mphalf(:,2)+
+	\State \verb+solQ_mphalf(:,1)+ $\gets$ \verb+solQ_mphalf(:,2)+
+
+	\For{ \text{( \textit{number of time-steps} )}}
+
+		\State apply boundary condition to inflow node
+		\State update \verb+Avec(1)+, \verb+Qvec(1)+
+
+		\For{ \text{ (\textit{ number of interior nodes }) } }
+
+			\State update all interior node solutions
+			\State \verb+Avec(node)+ $\gets$ updated solution for A
+			\State \verb+Qvec(node)+ $\gets$ updated solution for Q
+
+		\EndFor
+
+		\State apply boundary condition to outflow node
+		\State update \verb+Avec(end)+, \verb+Qvec(end)+
+		
+		\State \verb+solA_m(time-step,2)+ $\gets A_m^{n+1}$ 
+		\State \verb+solQ_m(time-step,2)+ $\gets Q_m^{n+1}$ 
+		
+		\State \verb+solA_mm1(time-step,2)+ $\gets$ \verb+Avec(end-1)+ 
+		\State \verb+solQ_mm1(time-step,2)+ $\gets$ \verb+Qvec(end-1)+ 
+		 
+		 \State \verb+solA_mphalf(time-step,2)+ $\gets A_{m+1/2}^{n+1/2}$ from converged iteration solutions
+		 \State \verb+solQ_mphalf(time-step,2)+ $\gets Q_{m+1/2}^{n+1/2}$ from converged iteration solutions
+
+	\EndFor
+	
+	\State \verb+solA(time-step,:)+ $\gets$ \verb+Avec+
+	\State \verb+solQ(time-step,:)+ $\gets$ \verb+Qvec+
+
+\EndFor
+ \end{algorithmic}
+ \end{algorithm}
+ 
+ \end{document}

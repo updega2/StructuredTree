@@ -1,0 +1,203 @@
+function f4 = getNonLinearEq4(a_SolX, a_N, a_Admittances)
+%--------------------------------------------------------------------------
+% Function to calculate the non-linear equation corresponding to the
+% outflow boundary condition for variable A_{m}^{n+1} as defined by
+% Olufsen's thesis
+% Argument definitions:
+% a_SolX:           The current set of guessed values for the 
+%                   iteration variables
+% a_N:              The index of the current time step in 
+%                   the cardiac period
+% a_Admittances:    The inverse fourier transformed outflow 
+%                   admittance values
+% Authors: Debanjan Mukherjee, Adam Updegrove, Alex Baelde
+% University of California, Berkeley.
+%--------------------------------------------------------------------------
+
+%Define global variables
+global Xvec
+global delK delH                % time-step size and mesh grid spacing
+global isR0function             % property of the geometry
+global solA solQ                % arrays for storing solution
+global P0
+global Rtop Rbottom
+global X1 X0
+
+%----------------------------------------------------
+% Each of these arrays are of size numtimesteps x 2. 
+% Column 1 stores solutions for previous time-period
+% Column 2 stores solutions for current time-period
+%----------------------------------------------------
+global solQ_mp_np_half          % array to store Q_{m+1/2}^{n+1/2}
+global solA_mp_np_half          % array to store A_{m+1/2}^{n+1/2}
+global solQ_m_n                 % array to store Q_m^n
+global solA_m_n                 % array to store A_m^n
+global solQ_mm1_n               % array to store Q_{m-1}^n
+global solA_mm1_n               % array to store A_{m-1}^n
+
+% Define the vessel length from X1 and X0:
+%-----------------------------------------
+LenVessel = X1 - X0;
+
+% Define theta and gamma from the discretization stencil:
+%--------------------------------------------------------
+%theta = delK/(2*delH);     %%%% OLD CODE
+%gamma = delK/4;            %%%% OLD CODE
+
+theta = delK/delH;  %%%% NEW CODE
+gamma = delK/2.0;   %%%% NEW CODE
+
+% calculate R0(X_{m+1/2}) and (dR0/dX) at X_{m+1/2}:
+%---------------------------------------------------
+%X_mphalf = 0.5*(Xvec(end) + Xvec(end-1));  %%%% CHECK THIS
+X_mphalf = Xvec(end)+0.5*delH;              %%%% CHECK THIS
+
+if ( isR0function )
+    R0_mphalf       = getR0function(X_mphalf,Rtop, Rbottom, LenVessel);
+    dR0dX_mphalf    = diffR0function(X_mphalf,Rtop, Rbottom, LenVessel);
+else
+    R0_mphalf       = getR0data(X_mphalf);  %%%% NEED TO IMPLEMENT THIS FUNCTION
+    dR0dX_mphalf    = 0.0;                  %%%% HAVE NOT ENCODED THIS
+end
+
+% calculate R0(X_m) and (dR0/dX) at X_m:
+%---------------------------------------
+X_m = Xvec(end);
+if ( isR0function )
+    R0_m    = getR0function(X_m,Rtop, Rbottom, LenVessel); 
+    dR0dX_m = diffR0function(X_m,Rtop, Rbottom, LenVessel);
+else
+    R0_m    = getR0data(X_m); %%%% NEED TO IMPLEMENT THIS FUNCTION
+    dR0dX_m = 0.0;            %%%% HAVE NOT ENCODED THIS
+end
+
+% calculate R0(X_{m-1}) and (dR0/dX) at X_{m-1}:
+%-----------------------------------------------
+X_mm1 = Xvec(end-1);
+if ( isR0function )
+    R0_mm1      = getR0function(X_mm1,Rtop, Rbottom, LenVessel);
+    dR0dX_mm1   = diffR0function(X_mm1,Rtop, Rbottom, LenVessel);
+else
+    R0_mm1      = getR0data(X_mm1); %%%% NEED TO IMPLEMENT THIS FUNCTION
+    dR0dX_mm1   = 0.0;              %%%% HAVE NOT ENCODED THIS
+end
+
+% calculate R0(X_{m-1/2}) and (dR0/dX) at X_{m-1/2}:
+%---------------------------------------------------
+X_mmhalf = 0.5*(Xvec(end) + Xvec(end-1));
+if ( isR0function )
+    R0_mmhalf      = getR0function(X_mmhalf,Rtop, Rbottom, LenVessel);
+    dR0dX_mmhalf   = diffR0function(X_mmhalf,Rtop, Rbottom, LenVessel);
+else
+    R0_mmhalf       = getR0data(X_mmhalf);  %%%% NEED TO IMPLEMENT THIS FUNCTION
+    dR0dX_mm1       = 0.0;                  %%%% HAVE NOT ENCODED THIS
+end
+
+% OLD CODE:
+%----------
+% % calculate (dB/dR0) at X_{m+1/2}^{n+1/2}:
+% %----------------------------------------
+% dBdR_mp_np_half = calculateDBDr(a_SolX(2),R0_mphalf,P0);
+% 
+% % use above to calculate dB/dX = (dB/dR0)*(dR0/dX) all evaluated at
+% % X_{m+1/2}:
+% %------------------------------------------------------------------
+% dBdX_mphalf     = dBdR_mp_np_half*dR0dX_mphalf;
+% 
+% % calculate B(X_{m+1/2}, x_2):
+% %-----------------------------
+% B_mphalf_x2     = calculateB(a_SolX(2),R0_mphalf,P0);
+% 
+% % calculate wall shear term at X_{m+1/2}:
+% %----------------------------------------
+% F_mphalf        = wallShear1(a_SolX(2), a_SolX(1));
+
+% NEW CODE:
+%----------
+A_mp_np_half = a_SolX(2);
+Q_mp_np_half = a_SolX(1);
+R_mp_np_half = getFluxVector(A_mp_np_half,Q_mp_np_half,...
+    R0_mphalf,P0);
+S_mp_np_half = getSourceVector(A_mp_np_half,Q_mp_np_half,...
+    R0_mphalf,dR0dX_mphalf,P0);
+R2_mp_np_half = R_mp_np_half(2);
+S2_mp_np_half = S_mp_np_half(2);
+
+% In the next part we are calculating the value of R(2)_{m-1/2}^{n+1/2} 
+% and S(2)_{m-1/2}^{n+1/2} using values of A_{m-1/2}^{n+1/2} and 
+% Q_{m-1/2}^{n+1/2}, evaluated using the discretization scheme
+%--------------------------------------------------------------------------
+% get values of Q_m^n, and A_m^n:
+%--------------------------------
+%Q_m_n = solQ(a_N,end);    %%%% OLD CODE
+%A_m_n = solA(a_N,end);    %%%% OLD CODE
+Q_m_n   = solQ_m_n(a_N,2);  %%%% NEW CODE
+A_m_n   = solA_m_n(a_N,2);  %%%% NEW CODE
+
+% get values of Q_{m-1}^n, and A_{m-1}^n:
+%----------------------------------------
+%Q_mm1_n = solQ(a_N,end-1);    %%%% OLD CODE
+%A_mm1_n = solA(a_N,end-1);    %%%% OLD CODE
+Q_mm1_n   = solQ_mm1_n(a_N,2);  %%%% NEW CODE
+A_mm1_n   = solA_mm1_n(a_N,2);  %%%% NEW CODE
+
+% calculate the flux vector R(Q_m^n, A_m^n):
+%-------------------------------------------
+R_m_n   = getFluxVector(A_m_n,Q_m_n,R0_m,P0);
+R1_m_n  = R_m_n(1)
+R2_m_n  = R_m_n(2);
+
+% calculate the source vector S(Q_m^n, A_m^n):
+%---------------------------------------------
+S_m_n   = getSourceVector(A_m_n,Q_m_n,R0_m,dR0dX_m,P0);
+S1_m_n  = S_m_n(1);
+S2_m_n  = S_m_n(2);
+
+% calculate the flux vector R(Q_{m-1}^n, A_{m-1}^n):
+%---------------------------------------------------
+R_mm1_n     = getFluxVector(A_mm1_n,Q_mm1_n,R0_mm1,P0);
+R1_mm1_n    = R_mm1_n(1)
+R2_mm1_n    = R_mm1_n(2);
+
+% calculate the source vector S(Q_{m-1}^n, A_{m-1}^n):
+%-----------------------------------------------------
+S_mm1_n     = getSourceVector(A_mm1_n,Q_mm1_n,R0_mm1,dR0dX_mm1,P0);
+S1_mm1_n    = S_mm1_n(1);
+S2_mm1_n    = S_mm1_n(2);
+
+% calculate A_{m-1/2}^{n+1/2} using the two-step discretization scheme:
+%----------------------------------------------------------------------
+A_mm_np_half = 0.5*(A_m_n + A_mm1_n) - ...
+    (delK/(2.0*delH))*(R1_m_n - R1_mm1_n);
+
+% calculate Q_{m-1/2}^{n+1/2} using the two-step discretization scheme:
+%----------------------------------------------------------------------
+Q_mm_np_half = 0.5*(Q_m_n + Q_mm1_n) - ...
+    (delK/(2.0*delH))*(R2_m_n - R2_mm1_n) + ...
+    (delK/4.0)*(S2_m_n + S2_mm1_n);
+
+% calculate the flux vector R(Q_{m-1/2}^{n+1/2}, A_{m-1/2}^{n+1/2}):
+%-------------------------------------------------------------------
+R_mm_np_half    = getFluxVector(A_mm_np_half,Q_mm_np_half,R0_mmhalf,P0);
+R2_mm_np_half   = R_mm_np_half(2);
+
+% calculate the source vector S(Q_{m-1/2}^{n+1/2}, A_{m-1/2}^{n+1/2}):
+%---------------------------------------------------------------------
+S_mm_np_half    = getSourceVector(A_mm_np_half,Q_mm_np_half,R0_mmhalf,...
+    dR0dX_mmhalf,P0);
+S2_mm_np_half   = S_mm_np_half(2);
+
+% calculate k6:
+%--------------
+k6 = Q_m_n + theta*R2_mm_np_half + gamma*S2_mm_np_half;
+
+% OLD CODE:
+%----------
+% f4 = -a_SolX(3) + k6 - ...
+%     theta*(((a_SolX(1)^2)/(a_SolX(2))) + B_mphalf_x2) + ...
+%     gamma*(F_mphalf + dBdX_mphalf);
+
+% NEW CODE:
+%----------
+f4  = -a_SolX(3) + Q_m_n - theta*(R2_mp_np_half - R2_mm_np_half) ...
+    + gamma*(S2_mp_np_half + S2_mm_np_half);
