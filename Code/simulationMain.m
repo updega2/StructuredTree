@@ -43,8 +43,12 @@ global solQ_m_n                 % array to store Q_m^n
 global solA_m_n                 % array to store A_m^n
 global solQ_mm1_n               % array to store Q_{m-1}^n
 global solA_mm1_n               % array to store A_{m-1}^n
-global isCopyOlufsen
-isCopyOlufsen = 0;
+
+global isMatlabNonLinSolve 
+global isMaterialExpModel
+global expModelK1 expModelK2 expModelK3
+
+isMatlabNonLinSolve = 0;
 
 % NOTE: Data should be written into global solution arrays only from the
 % main script. Data can be read from global solution arrays from any sub
@@ -118,16 +122,6 @@ end
 %--------------------------------------------------------------------------
 Mu = Nu * rho;
 
-if isCopyOlufsen
-    %--------------------------------------------------------------------------
-    % d. Get Cu( correction factor)
-    %--------------------------------------------------------------------------
-    m1 = 7.3693;
-    m2 = 1.2122;
-    m3 = 5.6517;
-    m4 = 0.21763;
-end
-
 %% Create Spatial and Temporal Discretisations:
 %--------------------------------------------------------------------------
 delK = Tcard/nsteps;
@@ -200,7 +194,6 @@ for i=1:length(k)
     indMinus = indexMap(-k(i));
     if k(i) >= 0
         zTree_F(indPlus) = flowTree.CalculateImpedance(freqVec(indPlus),1,0,50);
-        temp = zTree_F(25);
     else
         zTree_F(indPlus) = conj(zTree_F(indMinus));
     end
@@ -208,19 +201,12 @@ end
 
 zTree_T = ones(size(zTree_F))*10^-30;
 
-if isCopyOlufsen
-    zTree_F(1) = temp;
-    for i = 2:length(k)
-        zTree_F(i) = zTree_F(i-1);
-    end
-else
-    zTree_T = real(ifft(zTree_F,'symmetric'));
-end
+zTree_T = real(ifft(zTree_F,'symmetric'));
 
 yTree_T = 1./zTree_T;
 
 
-Qstart = 1;
+Qstart = getFlowRateIn(0,CardiacOut,CardiacPeak,Tcard);
 %Qstart = getFlowRateIn(0.01,CardiacOut,CardiacPeak,Tcard)
 %Qstart = 1*10^-30;
 
@@ -371,13 +357,13 @@ for periodCount = 1:numPeriods
             %-----------------------------------
             U_Xp_Tp_half = 0.5*(U_Xp1_T + U_X_T) - ...
                 (0.5*delK/delH)*(R_Xp1_T - R_X_T) + ...
-                (delK/4)*(S_Xp1_T + S_X_T);
+                (delK/4.0)*(S_Xp1_T + S_X_T);
             
             % c.11. calculate U_{x-1/2}^{t+1/2}:
             %-----------------------------------
             U_Xm_Tp_half = 0.5*(U_X_T+ U_Xm1_T) - ...
                 (0.5*delK/delH)*(R_X_T - R_Xm1_T) + ...
-                (delK/4)*(S_X_T + S_Xm1_T);
+                (delK/4.0)*(S_X_T + S_Xm1_T);
             
             % assign $ Q_{x+1/2}^{t+1/2} $:
             %------------------------------
@@ -510,17 +496,26 @@ for periodCount = 1:numPeriods
         % d.3. continue the iterative solution:
         %--------------------------------------
         nPeriod = timeCounter;
-        while (errIter > errTol)
-            fX(1)   = getNonLinearEq1(xIter, nPeriod, yTree_T);
-            fX(2)   = getNonLinearEq2(xIter, nPeriod, yTree_T);
-            fX(3)   = getNonLinearEq3(xIter, nPeriod, yTree_T);
-            fX(4)   = getNonLinearEq4(xIter, nPeriod, yTree_T);
-            Df      = getJacobianX(xIter, nPeriod, yTree_T);
-            xNew    = xIter - Df\fX;
-            errIter = norm(xNew - xIter,2)/norm(xNew - xIter0)
-            xIter   = xNew;
+        if ( isMatlabNonLinSolve == 1 ) 
+            f1 = @(x) getNonLinearEq1(x, nPeriod, yTree_T);
+            f2 = @(x) getNonLinearEq2(x, nPeriod, yTree_T);
+            f3 = @(x) getNonLinearEq3(x, nPeriod, yTree_T);
+            f4 = @(x) getNonLinearEq4(x, nPeriod, yTree_T);
+            %fHandle = @(x)[f1(x), f2(x), f3(x), f4(x)];
+            [xNew, fVal] = fsolve(@(x)[f1(x), f2(x), f3(x), f4(x)], xIter0);
+            fVal
+        else
+            while (errIter > errTol)
+                fX(1)   = getNonLinearEq1(xIter, nPeriod, yTree_T);
+                fX(2)   = getNonLinearEq2(xIter, nPeriod, yTree_T);
+                fX(3)   = getNonLinearEq3(xIter, nPeriod, yTree_T);
+                fX(4)   = getNonLinearEq4(xIter, nPeriod, yTree_T);
+                Df      = getJacobianX(xIter, nPeriod, yTree_T);
+                xNew    = xIter - Df\fX;
+                errIter = norm(xNew - xIter,2)/norm(xNew - xIter0)
+                xIter   = xNew;
+            end
         end
-        
         % d.4. use the converged solution to update outlet values:
         %---------------------------------------------------------
         Qvec(end) = xIter(3);

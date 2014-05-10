@@ -9,8 +9,10 @@ function dBdR0 = calculateDBDr(a_A,a_R0,a_P0)
 % Authors: Debanjan Mukherjee, Adam Updegrove, Alex Baelde
 % University of California, Berkeley.
 %--------------------------------------------------------------------------
-global Elast wallH              % mechanical properties of vessel wall
+global Elast wallH           % mechanical properties of vessel wall
 global rho                   % physical property of the fluid
+global isMaterialExpModel    % choice variable for Olufsen's exponential material model
+global expModelK1 expModelK2 expModelK3
 
 P = getPressure(a_A,a_R0,a_P0);
 A0= pi*a_R0*a_R0;
@@ -41,8 +43,12 @@ A0= pi*a_R0*a_R0;
 %if abs(denTerm2) < 10^-30
 %    pause;
 %end
-
- dBdR0 = -(4.0*Elast*wallH*pi)/(3.0*rho);
- %dBdR0 = ((dudr*v)-(u*dvdr))/(v*v)
+if ( isMaterialExpModel == 1 )
+    f = (4.0/3.0)*(expModelK1*exp(expModelK2*a_R0) + expModelK3);
+    dBdR0 = -f*pi/rho;
+else
+    dBdR0 = -(4.0*Elast*wallH*pi)/(3.0*rho);
+end
+%dBdR0 = ((dudr*v)-(u*dvdr))/(v*v)
 
 %dBdR0 = (numTerm1/denTerm1) + (numTerm2/denTerm2);
