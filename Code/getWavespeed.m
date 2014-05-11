@@ -22,9 +22,9 @@ end
 A0 = pi*R0*R0;
 
 if ( isMaterialExpModel == 1 )
-    f = (4.0/3.0)*(expModelK1*exp(expModelK2*a_R0) + expModelK3);
+    f = (4.0/3.0)*(expModelK1*exp(expModelK2*R0) + expModelK3);
 else
-    f = (4.0*Elast*wallH)/(3.0*a_R0);
+    f = (4.0*Elast*wallH)/(3.0*R0);
 end
 
 C = sqrt((0.5*f/rho)*sqrt(A0/a_A));

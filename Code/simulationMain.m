@@ -29,11 +29,11 @@ global Elast wallH wallDelta    % mechanical properties of vessel wall
 global P0
 global Nu rho Mu                % physical properties of the fluid
 global Rtop Rbottom
-global errTol 
+global errTol
 global solA solQ                % arrays for storing solution
 
 %----------------------------------------------------
-% Each of these arrays are of size numtimesteps x 2. 
+% Each of these arrays are of size numtimesteps x 2.
 % Column 1 stores solutions for previous time-period
 % Column 2 stores solutions for current time-period
 %----------------------------------------------------
@@ -44,11 +44,15 @@ global solA_m_n                 % array to store A_m^n
 global solQ_mm1_n               % array to store Q_{m-1}^n
 global solA_mm1_n               % array to store A_{m-1}^n
 
-global isMatlabNonLinSolve 
+global isMatlabNonLinSolve
+global isMethodCharacteristics
+global isCopyOlufsen
 global isMaterialExpModel
 global expModelK1 expModelK2 expModelK3
 
+isCopyOlufsen = 1;
 isMatlabNonLinSolve = 0;
+isMethodCharacteristics = 1;
 
 % NOTE: Data should be written into global solution arrays only from the
 % main script. Data can be read from global solution arrays from any sub
@@ -179,8 +183,6 @@ Imat = [1.0,0.0;0.0,1.0];
 
 %% Build a tree for the outlet:
 %--------------------------------------------------------------------------
-
-
 flowTree = Tree(rootR);
 flowTree.BuildTree(0.1*rootR,10,0.5,0.5);
 
@@ -218,8 +220,8 @@ for periodCount = 1:numPeriods
     % updating values for the current period:
     %---------------------------------------------------------------------
     if ( periodCount == 1 )
-        %solA(:,:)            = A0(end);
-        %solQ(:,:)            = Qstart;
+        % Simply initialize all arrays to a standard starting point:
+        %-----------------------------------------------------------
         solA_m_n(:,:)        = A0(end);
         solQ_m_n(:,:)        = Qstart;
         solA_mm1_n(:,:)      = A0(end);
@@ -227,6 +229,8 @@ for periodCount = 1:numPeriods
         solA_mp_np_half(:,:) = A0(end);
         solQ_mp_np_half(:,:) = Qstart;
     else
+        % Store all previous period solutions (from column 2) into column 1
+        %------------------------------------------------------------------
         solA_m_n(:,1)           = solA_m_n(:,2);
         solQ_m_n(:,1)           = solQ_m_n(:,2);
         solA_mm1_n(:,1)         = solA_mm1_n(:,2);
@@ -278,9 +282,9 @@ for periodCount = 1:numPeriods
         Q_zero_nphalf   = getFlowRateIn(simTime + 0.5*delK,...
             CardiacOut, CardiacPeak, Tcard);
         Q_half_nphalf   = 0.5*(Qvec(2) + Qvec(1)) - ...
-            (delK/(2*delH))*(R_1_n(2) - R_0_n(2)) + ...
-            (delK/4)*(S_1_n(2) + S_0_n(2));
-        Avec(1) = Aold(1) - (2*delK/delH)*(Q_half_nphalf - Q_zero_nphalf);
+            (delK/(2.0*delH))*(R_1_n(2) - R_0_n(2)) + ...
+            (delK/4.0)*(S_1_n(2) + S_0_n(2));
+        Avec(1) = Aold(1) - (2.0*delK/delH)*(Q_half_nphalf - Q_zero_nphalf);
         
         plotFlowRateIn(5,CardiacOut,CardiacPeak,Tcard);
         
@@ -438,100 +442,113 @@ for periodCount = 1:numPeriods
             
         end
         
-        
         % d. apply boundary condition at the ending point
         %------------------------------------------------
         % d.1. get the ifft of the impedances:
         %-------------------------------------
-        %zTree_T = ifft(zTree_F);
-        
-        % d.2. create the vector for iterative solution guess:
-        %-----------------------------------------------------
-        Q_m_n   = Qold(end);
-        A_m_n   = Aold(end);
-        Q_mm1_n = Qold(end-1);
-        A_mm1_n = Aold(end-1);
-        if ( isR0function ) 
-            R0_m_n      = getR0function(Xvec(end),...
-                Rtop, Rbottom, LenVessel);
-            dR0dX_m_n   = diffR0function(Xvec(end),...
-                Rtop, Rbottom, LenVessel);
-        else
-            R0_m_n = getR0data(Xvec(end));
-        end
-        if ( isR0function ) 
-            R0_mm1_n    = getR0function(Xvec(end-1),...
-                Rtop, Rbottom, LenVessel);
-            dR0dX_mm1_n = diffR0function(Xvec(end-1),...
-                Rtop, Rbottom, LenVessel);
-        else
-            R0_mm1_n = getR0data(Xvec(end-1));
-        end
-        
-        R_m_n   = getFluxVector(A_m_n, Q_m_n, R0_m_n, P0);
-        S_m_n   = getSourceVector(A_m_n, Q_m_n, R0_m_n, dR0dX_m_n, P0);
-        R1_m_n  = R_m_n(1);
-        R2_m_n  = R_m_n(2);
-        S1_m_n  = S_m_n(1);
-        S2_m_n  = S_m_n(2);
-        R_mm1_n = getFluxVector(A_mm1_n, Q_mm1_n,R0_mm1_n, P0);
-        S_mm1_n = getSourceVector(A_mm1_n, Q_mm1_n, R0_mm1_n, dR0dX_mm1_n, P0);
-        R1_mm1_n = R_mm1_n(1);
-        R2_mm1_n = R_mm1_n(2);
-        S1_mm1_n = S_mm1_n(1);
-        S2_mm1_n = S_mm1_n(2);
-        Q_mm_np_half = 0.5*(Q_m_n + Q_mm1_n) - ...
-            (delK/(2*delH))*(R2_m_n - R2_mm1_n) + ...
-            (delK/4)*(S2_m_n + S2_mm1_n);
-        A_mm_np_half = 0.5*(A_m_n + A_mm1_n) - ...
-            (delK/(2*delH))*(R1_m_n - R1_mm1_n) + ...
-            (delK/4)*(S1_m_n + S1_mm1_n);
-        %xIter0  = [Q_m_n, A_m_n, Q_mm_np_half, A_mm_np_half]';
-        xIter0  = [Q_mm_np_half, A_mm_np_half, Q_m_n, A_m_n]';
-        fX      = [0, 0, 0, 0]';
-        xIter   = xIter0;
-        
-        errIter = 10*errTol;
+        %zTree_T = ifft(zTree_F)
         
         % d.3. continue the iterative solution:
         %--------------------------------------
         nPeriod = timeCounter;
-        if ( isMatlabNonLinSolve == 1 ) 
-            f1 = @(x) getNonLinearEq1(x, nPeriod, yTree_T);
-            f2 = @(x) getNonLinearEq2(x, nPeriod, yTree_T);
-            f3 = @(x) getNonLinearEq3(x, nPeriod, yTree_T);
-            f4 = @(x) getNonLinearEq4(x, nPeriod, yTree_T);
-            %fHandle = @(x)[f1(x), f2(x), f3(x), f4(x)];
-            [xNew, fVal] = fsolve(@(x)[f1(x), f2(x), f3(x), f4(x)], xIter0);
-            fVal
+        if ( isMethodCharacteristics == 1 )
+            [A,Q] = characteristicOutflow(nPeriod+1, yTree_T);
+            Qvec(end) = Q;
+            Avec(end) = A;
+            % e. update all nodal solution values in the global solution arrays
+            %------------------------------------------------------------------
+            solA(timeCounter,:) = Avec(:);
+            solQ(timeCounter,:) = Qvec(:);
+            
+            solA_m_n(timeCounter,2)         = Avec(end);
+            solQ_m_n(timeCounter,2)         = Qvec(end);
+            solA_mm1_n(timeCounter,2)       = Avec(end-1);
+            solQ_mm1_n(timeCounter,2)       = Qvec(end-1);
         else
-            while (errIter > errTol)
-                fX(1)   = getNonLinearEq1(xIter, nPeriod, yTree_T);
-                fX(2)   = getNonLinearEq2(xIter, nPeriod, yTree_T);
-                fX(3)   = getNonLinearEq3(xIter, nPeriod, yTree_T);
-                fX(4)   = getNonLinearEq4(xIter, nPeriod, yTree_T);
-                Df      = getJacobianX(xIter, nPeriod, yTree_T);
-                xNew    = xIter - Df\fX;
-                errIter = norm(xNew - xIter,2)/norm(xNew - xIter0)
-                xIter   = xNew;
+            % d.2. create the vector for iterative solution guess:
+            %-----------------------------------------------------
+            Q_m_n   = Qold(end);
+            A_m_n   = Aold(end);
+            Q_mm1_n = Qold(end-1);
+            A_mm1_n = Aold(end-1);
+            if ( isR0function )
+                R0_m_n      = getR0function(Xvec(end),...
+                    Rtop, Rbottom, LenVessel);
+                dR0dX_m_n   = diffR0function(Xvec(end),...
+                    Rtop, Rbottom, LenVessel);
+            else
+                R0_m_n = getR0data(Xvec(end));
             end
+            if ( isR0function )
+                R0_mm1_n    = getR0function(Xvec(end-1),...
+                    Rtop, Rbottom, LenVessel);
+                dR0dX_mm1_n = diffR0function(Xvec(end-1),...
+                    Rtop, Rbottom, LenVessel);
+            else
+                R0_mm1_n = getR0data(Xvec(end-1));
+            end
+            
+            R_m_n   = getFluxVector(A_m_n, Q_m_n, R0_m_n, P0);
+            S_m_n   = getSourceVector(A_m_n, Q_m_n, R0_m_n, dR0dX_m_n, P0);
+            R1_m_n  = R_m_n(1);
+            R2_m_n  = R_m_n(2);
+            S1_m_n  = S_m_n(1);
+            S2_m_n  = S_m_n(2);
+            R_mm1_n = getFluxVector(A_mm1_n, Q_mm1_n,R0_mm1_n, P0);
+            S_mm1_n = getSourceVector(A_mm1_n, Q_mm1_n, R0_mm1_n, dR0dX_mm1_n, P0);
+            R1_mm1_n = R_mm1_n(1);
+            R2_mm1_n = R_mm1_n(2);
+            S1_mm1_n = S_mm1_n(1);
+            S2_mm1_n = S_mm1_n(2);
+            Q_mm_np_half = 0.5*(Q_m_n + Q_mm1_n) - ...
+                (delK/(2*delH))*(R2_m_n - R2_mm1_n) + ...
+                (delK/4)*(S2_m_n + S2_mm1_n);
+            A_mm_np_half = 0.5*(A_m_n + A_mm1_n) - ...
+                (delK/(2*delH))*(R1_m_n - R1_mm1_n) + ...
+                (delK/4)*(S1_m_n + S1_mm1_n);
+            %xIter0  = [Q_m_n, A_m_n, Q_mm_np_half, A_mm_np_half]';
+            xIter0  = [Q_mm_np_half, A_mm_np_half, Q_m_n, A_m_n]';
+            fX      = [0, 0, 0, 0]';
+            xIter   = xIter0;
+            
+            errIter = 10*errTol;
+            if ( isMatlabNonLinSolve == 1 )
+                f1 = @(x) getNonLinearEq1(x, nPeriod, yTree_T);
+                f2 = @(x) getNonLinearEq2(x, nPeriod, yTree_T);
+                f3 = @(x) getNonLinearEq3(x, nPeriod, yTree_T);
+                f4 = @(x) getNonLinearEq4(x, nPeriod, yTree_T);
+                [xNew, fVal] = fsolve(@(x)[f1(x), f2(x), f3(x), f4(x)], xIter0);
+                fVal
+            else
+                while (errIter > errTol)
+                    fX(1)   = getNonLinearEq1(xIter, nPeriod, yTree_T);
+                    fX(2)   = getNonLinearEq2(xIter, nPeriod, yTree_T);
+                    fX(3)   = getNonLinearEq3(xIter, nPeriod, yTree_T);
+                    fX(4)   = getNonLinearEq4(xIter, nPeriod, yTree_T);
+                    Df      = getJacobianX(xIter, nPeriod, yTree_T);
+                    xNew    = xIter - Df\fX;
+                    errIter = norm(xNew - xIter,2)/norm(xNew - xIter0)
+                    xIter   = xNew;
+                end
+            end
+            % d.4. use the converged solution to update outlet values:
+            %---------------------------------------------------------
+            Qvec(end) = xIter(3);
+            Avec(end) = xIter(4);
+            % e. update all nodal solution values in the global solution arrays
+            %------------------------------------------------------------------
+            solA(timeCounter,:) = Avec(:);
+            solQ(timeCounter,:) = Qvec(:);
+            
+            solA_m_n(timeCounter,2)         = Avec(end);
+            solQ_m_n(timeCounter,2)         = Qvec(end);
+            solA_mm1_n(timeCounter,2)       = Avec(end-1);
+            solQ_mm1_n(timeCounter,2)       = Qvec(end-1);
+            solA_mp_np_half(timeCounter,2)  = xIter(2);
+            solQ_mp_np_half(timeCounter,2)  = xIter(1);
         end
-        % d.4. use the converged solution to update outlet values:
-        %---------------------------------------------------------
-        Qvec(end) = xIter(3);
-        Avec(end) = xIter(4);
         
-        % e. update all nodal solution values in the global solution arrays
-        %------------------------------------------------------------------
-        solA(timeCounter,:) = Avec(:);
-        solQ(timeCounter,:) = Qvec(:);
         
-        solA_m(timeCounter,2)       = Avec(end);
-        solQ_m(timeCounter,2)       = Qvec(end);
-        solA_mm1(timeCounter,2)     = Avec(end-1);
-        solQ_mm1(timeCounter,2)     = Qvec(end-1);
-        solA_mp_np_half(timeCounter,2)  = xIter(2);
-        solQ_mphalf(timeCounter,2)  = xIter(1);
         
     end
     
