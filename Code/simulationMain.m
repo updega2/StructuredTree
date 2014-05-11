@@ -233,6 +233,7 @@ for i=1:length(k)
     indMinus = indexMap(-k(i));
     if k(i) >= 0
         zTree_F(indPlus) = flowTree.CalculateImpedance(freqVec(indPlus),1,0,50);
+        temp = zTree_F(25);
     else
         zTree_F(indPlus) = conj(zTree_F(indMinus));
     end
