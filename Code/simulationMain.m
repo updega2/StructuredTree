@@ -54,6 +54,8 @@ isCopyOlufsen = 1;
 isMatlabNonLinSolve = 0;
 isMethodCharacteristics = 1;
 
+Imat = [1.0,0.0;0.0,1.0];
+
 % NOTE: Data should be written into global solution arrays only from the
 % main script. Data can be read from global solution arrays from any sub
 % routine.
@@ -128,42 +130,15 @@ Mu = Nu * rho;
 
 %% Create Spatial and Temporal Discretisations:
 %--------------------------------------------------------------------------
-delK = Tcard/nsteps;
-delH = (X1 - X0)/nnodes;
+%delK = Tcard/nsteps;       %%%% OLD CODE
+%delH = (X1 - X0)/nnodes;   %%%% NEW CODE
+
+Xvec = linspace(X0, X1, nnodes);    % The vector for x coordinates
+Tvec = linspace(0, Tcard, nsteps);  % The vector for time in cardiac period
+delK = Tvec(2) - Tvec(1);
+delH = Xvec(2) - Xvec(1);
 
 % NOTE: need to encode a function to check CFL condition for these
-
-%% Initialize the solution vectors: (we have let them be 0 for now)
-%--------------------------------------------------------------------------
-Xvec = linspace(X1, X0, nnodes);   % The vector for x coordinates
-Qvec = ones(size(Xvec))*10^-30;         % The vector for flow rate solutions
-Avec = ones(size(Xvec))*10^-30;         % The vector for area solutions
-
-% a. Initialize the arrays for solution storage. Storage should be for one
-% cardiac period's worth of spatial data
-%--------------------------------------------------------------------------
-% store _A_, _Q_ as nodes along columns, and time-steps along rows:
-%--------------------------------------------------------------------------
-solA = ones(nsteps, nnodes)*10^-30;
-solQ = ones(nsteps, nnodes)*10^-30;
-
-% for iterations Q, and A at X_{end+1/2} need to be stored for current and
-% previous cardic cycles:
-%--------------------------------------------------------------------------
-solQ_mp_np_half     = ones(nsteps, 2)*10^-30;
-solA_mp_np_half     = ones(nsteps, 2)*10^-30;
-
-% for iterations Q, and A at X_{end} need to be stored for previous and
-% current cardiac cycles respectively columnwise:
-%---------------------------------------------------------------------
-solQ_m_n          = ones(nsteps, 2)*10^-30;
-solA_m_n          = ones(nsteps, 2)*10^-30;
-
-% for iterations Q, and A at X_{end-1} need to be stores for previous and
-% and current cardiac cycles respectively columnwise:
-%-----------------------------------------------------------------------
-solQ_mm1_n         = ones(nsteps, 2)*10^-30;
-solA_mm1_n         = ones(nsteps, 2)*10^-30;
 
 %% Generate a distribution of initial radius values
 %--------------------------------------------------------------------------
@@ -177,9 +152,71 @@ end
 
 A0 = pi*R0.*R0;
 
-timeCounter = 1;
+if ( isCopyOlufsen == 1 )
+    m1     = 7.3693;
+    m2     = 1.2122;
+    m3     = 5.6517;
+    m4     = 0.21763;
+    for i = 1:nnodes
+        womersley(i) = R0(i)*sqrt((2.0*pi/Tcard)/Nu);
+        Cu(i)        = atan(m4*(-womersley(i)+m3))/m1 + m2;
+    end
+end
 
-Imat = [1.0,0.0;0.0,1.0];
+%% Fix a chosen value for flow-rate to initialize (let it be 1 for now):
+%--------------------------------------------------------------------------
+%Qstart = getFlowRateIn(0,CardiacOut,CardiacPeak,Tcard);
+%Qstart = getFlowRateIn(0.01,CardiacOut,CardiacPeak,Tcard)
+%Qstart = 1*10^-30;
+Qstart = 1.0;
+
+%% Initialize the solution vectors:
+%--------------------------------------------------------------------------
+Qvec = Qstart*ones(size(Xvec));     % The vector for flow rate solutions
+Avec = A0;                          % The vector for area solutions
+
+% a. Initialize the arrays for solution storage. Storage should be for one
+% cardiac period's worth of spatial data
+%--------------------------------------------------------------------------
+% store _A_, _Q_ as nodes along columns, and time-steps along rows:
+%--------------------------------------------------------------------------
+solA = zeros(nsteps, nnodes);
+solQ = zeros(nsteps, nnodes);
+for timecounter = 1:nsteps
+    solA(timecounter,:) = A0;
+    solQ(timecounter,:) = Qstart;
+end
+
+%%%% OLD CODE:
+% % for iterations Q, and A at X_{end+1/2} need to be stored for current and
+% % previous cardic cycles:
+% %--------------------------------------------------------------------------
+% solQ_mp_np_half     = ones(nsteps, 2)*10^-30;
+% solA_mp_np_half     = ones(nsteps, 2)*10^-30;
+%
+% % for iterations Q, and A at X_{end} need to be stored for previous and
+% % current cardiac cycles respectively columnwise:
+% %---------------------------------------------------------------------
+% solQ_m_n          = ones(nsteps, 2)*10^-30;
+% solA_m_n          = ones(nsteps, 2)*10^-30;
+%
+% % for iterations Q, and A at X_{end-1} need to be stores for previous and
+% % and current cardiac cycles respectively columnwise:
+% %-----------------------------------------------------------------------
+% solQ_mm1_n         = ones(nsteps, 2)*10^-30;
+% solA_mm1_n         = ones(nsteps, 2)*10^-30;
+%%%% END OLD CODE
+
+%%%% NEW CODE
+solQ_mp_np_half     = zeros(nsteps, 2);
+solA_mp_np_half     = zeros(nsteps, 2);
+solQ_m_n            = zeros(nsteps, 2);
+solA_m_n            = zeros(nsteps, 2);
+solQ_mm1_n          = zeros(nsteps, 2);
+solA_mm1_n          = zeros(nsteps, 2);
+Aold                = zeros(1, nnodes);
+Qold                = zeros(1, nnodes);
+%%%% END NEW CODE
 
 %% Build a tree for the outlet:
 %--------------------------------------------------------------------------
@@ -207,13 +244,9 @@ zTree_T = real(ifft(zTree_F,'symmetric'));
 
 yTree_T = 1./zTree_T;
 
-
-Qstart = getFlowRateIn(0,CardiacOut,CardiacPeak,Tcard);
-%Qstart = getFlowRateIn(0.01,CardiacOut,CardiacPeak,Tcard)
-%Qstart = 1*10^-30;
-
-% loop through the number of cardiac cycles:
+%% Loop through the number of cardiac cycles:
 %-------------------------------------------
+simTime = 0;
 for periodCount = 1:numPeriods
     
     % b. Store values of previous period for appropriate variables before
@@ -245,8 +278,8 @@ for periodCount = 1:numPeriods
         
         if timeCounter == 1
             if periodCount == 1
-                Aold = A0;
-                Qold = solQ(nsteps,:);
+                Aold    = A0;      % old nodal areas
+                Qold(:) = Qstart;  % old nodal flowrates
             else
                 Aold = solA(nsteps,:);
                 Qold = solQ(nsteps,:);
@@ -261,7 +294,11 @@ for periodCount = 1:numPeriods
         
         % a. update simulation time and get the corresponding index:
         %-----------------------------------------------------------
-        simTime = mod(delK*timeCounter, Tcard);
+        %         simTime = mod(delK*(timeCounter), Tcard); %%%% OLD CODE
+        %         simTime                                   %%%% OLD CODE
+        
+        simTimeP = Tvec(timeCounter);   %%%% NEW CODE
+        simTime  = simTime + simTimeP;  %%%% NEW CODE
         
         % b. apply boundary condition at starting point:
         %-----------------------------------------------
@@ -277,13 +314,28 @@ for periodCount = 1:numPeriods
         
         % b.3. update the solutions at the inlet:
         %----------------------------------------
-        Qvec(1)         = getFlowRateIn(simTime,...
+        %%%% OLD CODE
+        %------------
+        %         Qvec(1)         = getFlowRateIn(simTime,...
+        %             CardiacOut, CardiacPeak, Tcard);
+        %         Q_zero_nphalf   = getFlowRateIn(simTime + 0.5*delK,...
+        %             CardiacOut, CardiacPeak, Tcard);
+        
+        %%%% NEW CODE
+        %------------
+        Qvec(1)         = getFlowRateIn(simTimeP,...
             CardiacOut, CardiacPeak, Tcard);
-        Q_zero_nphalf   = getFlowRateIn(simTime + 0.5*delK,...
+        Q_zero_nphalf   = getFlowRateIn(simTimeP + 0.5*delK,...
             CardiacOut, CardiacPeak, Tcard);
-        Q_half_nphalf   = 0.5*(Qvec(2) + Qvec(1)) - ...
-            (delK/(2.0*delH))*(R_1_n(2) - R_0_n(2)) + ...
-            (delK/4.0)*(S_1_n(2) + S_0_n(2));
+        if ( isCopyOlufsen == 1 )
+            Q_half_nphalf   = 0.5*(Qvec(2) + Qvec(1)) - ...
+                (delK/(2.0*Cu(1)*delH))*(R_1_n(2) - R_0_n(2)) + ...
+                (delK/(4.0*Cu(1)))*(S_1_n(2) + S_0_n(2));
+        else
+            Q_half_nphalf   = 0.5*(Qvec(2) + Qvec(1)) - ...
+                (delK/(2.0*delH))*(R_1_n(2) - R_0_n(2)) + ...
+                (delK/4.0)*(S_1_n(2) + S_0_n(2));
+        end
         Avec(1) = Aold(1) - (2.0*delK/delH)*(Q_half_nphalf - Q_zero_nphalf);
         
         plotFlowRateIn(5,CardiacOut,CardiacPeak,Tcard);
@@ -359,15 +411,36 @@ for periodCount = 1:numPeriods
             
             % c.10. calculate U_{x+1/2}^{t+1/2}:
             %-----------------------------------
-            U_Xp_Tp_half = 0.5*(U_Xp1_T + U_X_T) - ...
-                (0.5*delK/delH)*(R_Xp1_T - R_X_T) + ...
-                (delK/4.0)*(S_Xp1_T + S_X_T);
+            if ( isCopyOlufsen == 1 )
+                U_Xp_Tp_half(1) = 0.5*(U_Xp1_T(1) + U_X_T(1)) - ...
+                    (0.5*delK/delH)*(R_Xp1_T(1) - R_X_T(1)) + ...
+                    (delK/4.0)*(S_Xp1_T(1) + S_X_T(1));
+                
+                U_Xp_Tp_half(2) = 0.5*(U_Xp1_T(2) + U_X_T(2)) - ...
+                    (0.5*delK/(delH*Cu(x)))*(R_Xp1_T(2) - R_X_T(2)) + ...
+                    (delK/(4.0*Cu(x)))*(S_Xp1_T(2) + S_X_T(2));
+            else
+                
+                U_Xp_Tp_half = 0.5*(U_Xp1_T + U_X_T) - ...
+                    (0.5*delK/delH)*(R_Xp1_T - R_X_T) + ...
+                    (delK/4.0)*(S_Xp1_T + S_X_T);
+            end
             
             % c.11. calculate U_{x-1/2}^{t+1/2}:
             %-----------------------------------
-            U_Xm_Tp_half = 0.5*(U_X_T+ U_Xm1_T) - ...
-                (0.5*delK/delH)*(R_X_T - R_Xm1_T) + ...
-                (delK/4.0)*(S_X_T + S_Xm1_T);
+            if ( isCopyOlufsen == 1 )
+                U_Xm_Tp_half(1) = 0.5*(U_X_T(1) + U_Xm1_T(2)) - ...
+                    (0.5*delK/delH)*(R_X_T(1) - R_Xm1_T(1)) + ...
+                    (delK/4.0)*(S_X_T(1) + S_Xm1_T(1));
+                
+                U_Xm_Tp_half(2) = 0.5*(U_X_T(2) + U_Xm1_T(2)) - ...
+                    (0.5*delK/(delH*Cu(x)))*(R_X_T(2) - R_Xm1_T(2)) + ...
+                    (delK/(4.0*Cu(x)))*(S_X_T(2) + S_Xm1_T(2));
+            else
+                U_Xm_Tp_half = 0.5*(U_X_T+ U_Xm1_T) - ...
+                    (0.5*delK/delH)*(R_X_T - R_Xm1_T) + ...
+                    (delK/4.0)*(S_X_T + S_Xm1_T);
+            end
             
             % assign $ Q_{x+1/2}^{t+1/2} $:
             %------------------------------
@@ -423,8 +496,19 @@ for periodCount = 1:numPeriods
             
             % calculate the solution update:
             %-------------------------------
-            U_X_Tp1 = U_X_T - (delK/delH)*(R_Xp_Tp_half - R_Xm_Tp_half) + ...
-                (delK/2.0)*(S_Xp_Tp_half + S_Xm_Tp_half);
+            if ( isCopyOlufsen == 1 )
+                U_X_Tp1(1) = U_X_T(1) - ...
+                    (delK/delH)*(R_Xp_Tp_half(1) - R_Xm_Tp_half(1)) + ...
+                    (delK/2.0)*(S_Xp_Tp_half(1) + S_Xm_Tp_half(1));
+                
+                U_X_Tp1(2) = U_X_T(2) - ...
+                    (delK/(delH*Cu(x)))*(R_Xp_Tp_half(2) - R_Xm_Tp_half(2)) + ...
+                    (delK/(2.0*Cu(x)))*(S_Xp_Tp_half(2) + S_Xm_Tp_half(2));
+            else
+                U_X_Tp1 = U_X_T - ...
+                    (delK/delH)*(R_Xp_Tp_half - R_Xm_Tp_half) + ...
+                    (delK/2.0)*(S_Xp_Tp_half + S_Xm_Tp_half);
+            end
             
             % store this solution update into solA and solQ (CHECK IMPLEMENTATION)
             
@@ -437,9 +521,17 @@ for periodCount = 1:numPeriods
                 error('Avec is negative');
             end
             
-            solA(timeCounter, x) = Avec(x);
-            solQ(timeCounter, x) = Qvec(x);
+            %%%% NOTE: NEED TO CHECK TIME INDEXING:
             
+%             %%%% OLD CODE
+%             solA(timeCounter, x) = Avec(x);
+%             solQ(timeCounter, x) = Qvec(x);
+%             %%%% END OLD CODE
+            
+            %%%% NEW CODE
+            solA(timecounter+1, x) = Avec(x);
+            solQ(timeCounter+1, x) = Qvec(x);
+            %%%% END NEW CODE
         end
         
         % d. apply boundary condition at the ending point
