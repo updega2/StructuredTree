@@ -51,7 +51,7 @@ global isMaterialExpModel
 global expModelK1 expModelK2 expModelK3
 
 isCopyOlufsen = 1;
-isMatlabNonLinSolve = 0;
+isMatlabNonLinSolve = 1;
 isMethodCharacteristics = 1;
 
 Imat = [1.0,0.0;0.0,1.0];
@@ -240,7 +240,14 @@ end
 
 zTree_T = ones(size(zTree_F))*10^-30;
 
-zTree_T = real(ifft(zTree_F,'symmetric'));
+if isCopyOlufsen
+    zTree_F(1) = temp;
+    for i = 2:length(k)
+        zTree_F(i) = zTree_F(i-1);
+    end
+else
+    zTree_T = real(ifft(zTree_F,'symmetric'));
+end
 
 yTree_T = 1./zTree_T;
 
