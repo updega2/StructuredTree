@@ -142,14 +142,14 @@ nlEqAQ = @(x)x + getPressure(x,R0,P0)*a_Admittances(1)*(delK/denomTerm) + ...
 AQ0 = A_T;
 
 [A_Q, gVal] = fsolve(nlEqAQ, A_T);
-gVal
+gVal;
 
 A   = A_Q;
 
 % Calculate Q_Q:
 %---------------
-getPressure(A_Q, R0, P0)
-a_Admittances(1)*delK
-Q_tms
+getPressure(A_Q, R0, P0);
+a_Admittances(1)*delK;
+Q_tms;
 Q_Q = getPressure(A_Q, R0, P0)*a_Admittances(1)*delK + Q_tms;
 Q   = Q_Q;

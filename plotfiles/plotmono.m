@@ -3,7 +3,7 @@ clear all
 N=1024;  
 
 figure(1); clf;
-load -ascii q1.2d;
+load -ascii ../runs/q1.2d;
 [X,Y,Z] = gnuplot(q1); 
 h = plot(X(:,39),Z(:,39));
 set(h,'LineWidth',3);
@@ -15,7 +15,7 @@ ylabel('q [cm^3/s]');
 print -depsc2 'aorta_des.eps'
 
 figure(2); clf;
-load -ascii p1.2d;
+load -ascii ../runs/p1.2d;
 [Xp,Yp,Zp] = gnuplot(p1); 
 h = plot(Xp(:,39),Zp(:,39));
 set(h,'LineWidth',3);

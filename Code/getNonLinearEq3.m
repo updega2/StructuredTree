@@ -107,9 +107,9 @@ Q_mm_np_half = 0.5*(Q_m_n + Q_mm1_n) - ...
 
 % calculate k_5 = A_m^n + theta*Q_{m-1/2}^{n+1/2}:
 %-------------------------------------------------
-k5 = A_m_n + theta*Q_mm_np_half
+k5 = A_m_n + theta*Q_mm_np_half;
 
-a_SolX(1)
-a_SolX(4)
+a_SolX(1);
+a_SolX(4);
 
 f3 = k5 - theta*a_SolX(1) - a_SolX(4);

@@ -54,7 +54,7 @@ global expModelK1 expModelK2 expModelK3
 isMaterialExpModel = 1;
 isCopyOlufsen = 0;
 isMatlabNonLinSolve = 1;
-isMethodCharacteristics = 1;
+isMethodCharacteristics = 0;
 
 expModelK1 = 2.0*10^6;
 expModelK2 = -2253.0;
@@ -278,7 +278,7 @@ for periodCount = 1:numPeriods
         %Resistance = 333305; 
         %solQ(1,end) = getPressure(solA(1,end),R0(end),P0)/Resistance;
         solQ(1,end) = getPressure(solA(1,end),R0(end),P0)*yTree_T(1)*delK;
-        solQ(1,end)
+        solQ(1,end);
     else
         %------------------------------------------------------------------
         % get the first time instant (T=0) for the N+1'th period to match
@@ -616,7 +616,8 @@ for periodCount = 1:numPeriods
                 f2 = @(x) getNonLinearEq2(x, nPeriod, yTree_T);
                 f3 = @(x) getNonLinearEq3(x, nPeriod, yTree_T);
                 f4 = @(x) getNonLinearEq4(x, nPeriod, yTree_T);
-                [xNew, fVal] = fsolve(@(x)[f1(x), f2(x), f3(x), f4(x)], xIter0);
+                options = optimset('Display','off');
+                [xNew, fVal] = fsolve(@(x)[f1(x), f2(x), f3(x), f4(x)], xIter0,options);
                 fVal;
             else
                 while (errIter > errTol)
@@ -626,7 +627,7 @@ for periodCount = 1:numPeriods
                     fX(4)   = getNonLinearEq4(xIter, nPeriod, yTree_T);
                     Df      = getJacobianX(xIter, nPeriod, yTree_T);
                     xNew    = xIter - Df\fX;
-                    errIter = norm(xNew - xIter,2)/norm(xNew - xIter0)
+                    errIter = norm(xNew - xIter,2)/norm(xNew - xIter0);
                     xIter   = xNew;
                 end
             end
