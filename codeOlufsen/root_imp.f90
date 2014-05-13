@@ -259,6 +259,7 @@ implicit none
 
   ! Insert Z(0,0) as described in the theoretical derivation
   Z_om(N/2+1) = temp
+
 end function comp_imp
 
 

@@ -50,9 +50,10 @@ global isCopyOlufsen
 global isMaterialExpModel
 global expModelK1 expModelK2 expModelK3
 
-isCopyOlufsen = 1;
-isMatlabNonLinSolve = 0;
-isMethodCharacteristics = 1;
+isMaterialExpModel = 0;
+isCopyOlufsen = 0;
+isMatlabNonLinSolve = 1;
+isMethodCharacteristics = 0;
 
 Imat = [1.0,0.0;0.0,1.0];
 
@@ -61,7 +62,7 @@ Imat = [1.0,0.0;0.0,1.0];
 % routine.
 
 %--------------------------------------------------------------------------
-% b. Then we ask user to input the simulation input data file on the
+% b. Then we ask user to input the simulation input dcleclclcccata file on the
 % command window:
 %--------------------------------------------------------------------------
 inputFile = input('Enter the simulation input file \n','s');
@@ -168,7 +169,7 @@ end
 %Qstart = getFlowRateIn(0,CardiacOut,CardiacPeak,Tcard);
 %Qstart = getFlowRateIn(0.01,CardiacOut,CardiacPeak,Tcard)
 %Qstart = 1*10^-30;
-Qstart = 1.0;
+Qstart = 1*10^-6;
 
 %% Initialize the solution vectors:
 %--------------------------------------------------------------------------
@@ -226,23 +227,40 @@ flowTree.BuildTree(0.1*rootR,10,0.5,0.5);
 k = [(-nsteps/2):1:(nsteps/2)];
 freqVec = ((2.*pi*k)/Tcard);
 
-zTree_F = ones(size(k))*10^-30;
+zTree_F = ones(size(k));
+
 
 for i=1:length(k)
     indPlus = indexMap(k(i));
-    indMinus = indexMap(-k(i));
-    if k(i) >= 0
-        zTree_F(indPlus) = flowTree.CalculateImpedance(freqVec(indPlus),1,0,50);
-    else
-        zTree_F(indPlus) = conj(zTree_F(indMinus));
+    if k(i) > 0
+        zTree_F(indPlus-1) = flowTree.CalculateImpedance(freqVec(indPlus),1,0,50);
     end
 end
 
-zTree_T = ones(size(zTree_F))*10^-30;
+for i=1:length(k)
+    if k(i) <= 0
+        indPlus = indexMap(-k(i));
+        indMinus = indexMap(k(i));
+        zTree_F(indMinus) = conj(zTree_F(indPlus));
+    end
+end
 
-zTree_T = real(ifft(zTree_F,'symmetric'));
+temp = zTree_F(nsteps/2);
+tempTree = zTree_F;
+for i = (nsteps/2):nsteps
+    zTree_F(i+1) = tempTree(i);
+end
+zTree_F(nsteps/2) = temp;
+
+if isCopyOlufsen
+    zTree_T = real(ifft(zTree_F,'symmetric'));
+else
+    zTree_T = real(ifft(fftshift(zTree_F)/Tcard,'symmetric'));
+end
 
 yTree_T = 1./zTree_T;
+%yTree_T = yTree_T;
+
 
 %% Loop through the number of cardiac cycles:
 %-------------------------------------------
@@ -274,14 +292,14 @@ for periodCount = 1:numPeriods
     
     % Add Initial Conditions For The Cardiac Period Solutions:
     %---------------------------------------------------------
-    if ( periodCount == 1 ) 
+    if ( periodCount == 1 )
         %------------------------------------------------------------------
         % retain original initialization for all interior nodes, but ensure
         % boundary conditions are satisfied for all boundary nodes:
         %------------------------------------------------------------------
         % solA(1,2:nnodes-1) remain unchanged
         % solQ(1,2:nnodes-1) remain unchanged
-        % solA(1,1) should match initial area values at the left boundary, 
+        % solA(1,1) should match initial area values at the left boundary,
         % and therefore should also remain unchanged
         % solQ(1,1) should match flowrate value at time t = 0
         solQ(1,1) = getFlowRateIn(Tvec(1), CardiacOut, CardiacPeak, Tcard);
@@ -289,7 +307,7 @@ for periodCount = 1:numPeriods
         % boundary, and therefore should also remain unchanged
         % solQ(1,end) should match impedance condition with all Q_tms terms
         % being appropriately approximated
-        solQ(1,end) = getPressure(solA(1,end),R0(end),P0)*yTree_T(0)*delK;
+        solQ(1,end) = getPressure(solA(1,end),R0(end),P0)*yTree_T(1)*delK;
     else
         %------------------------------------------------------------------
         % get the first time instant (T=0) for the N+1'th period to match
@@ -300,39 +318,45 @@ for periodCount = 1:numPeriods
         solQ(1,:) = solQ(nsteps,:);
     end
     
-    % loop through the time-steps in a cardiac cycle. note that we are 
-    %------------------------------------------------
+    % loop through the time-steps in a cardiac cycle. note that we are
+    % going to calculate the solution at time = timeCounter, from the
+    % solution at time = timeCounter - 1, in an explicit manner
+    %----------------------------------------------------------------------
     for timeCounter = 2:nsteps
-
-%%%% BEGIN OLD CODE
-%         if timeCounter == 1
-%             if periodCount == 1
-%                 Aold    = A0;      % old nodal areas
-%                 Qold(:) = Qstart;  % old nodal flowrates
-%             else
-%                 Aold = solA(nsteps,:);
-%                 Qold = solQ(nsteps,:);
-%             end
-%         else
-%             Aold = solA(timeCounter-1,:);
-%             Qold = solQ(timeCounter-1,:);
-%         end
-%         
-%         %Avec = Aold;
-%         %Qvec = Qold;
-%%%% END OLD CODE
+        
+        
+        %         %%%% BEGIN OLD CODE
+        %         if timeCounter == 1
+        %             if periodCount == 1
+        %                 Aold    = A0;      % old nodal areas
+        %                 Qold(:) = Qstart;  % old nodal flowrates
+        %             else
+        %                 Aold = solA(nsteps,:);
+        %                 Qold = solQ(nsteps,:);
+        %             end
+        %         else
+        %             Aold = solA(timeCounter-1,:);
+        %             Qold = solQ(timeCounter-1,:);
+        %         end
+        %
+        %         %Avec = Aold;
+        %         %Qvec = Qold;
+        %         %%%% END OLD CODE
         
         % a. update simulation time and get the corresponding index:
         %-----------------------------------------------------------
-%%%% BEGIN OLD CODE
-%         simTime = mod(delK*(timeCounter), Tcard);
-%         simTime
-%%%% END OLD CODE
+        %         %%% BEGIN OLD CODE
+        %         simTime = mod(delK*(timeCounter), Tcard);
+        %         simTime
+        %         %%% END OLD CODE
         
-%%%% BEGIN NEW CODE
-        simTimeP = Tvec(timeCounter);
-        simTime  = simTime + simTimeP;
-%%%% END NEW CODE
+%         %%% BEGIN NEW CODE
+         simTimeP = Tvec(timeCounter);
+         simTime  = simTime + simTimeP;
+%         %%% END NEW CODE
+
+        Aold = solA(timeCounter-1,:);
+        Qold = solQ(timeCounter-1,:);
         
         % b. apply boundary condition at starting point:
         %-----------------------------------------------
@@ -348,31 +372,33 @@ for periodCount = 1:numPeriods
         
         % b.3. update the solutions at the inlet:
         %----------------------------------------
-        %%%% OLD CODE
-        %------------
+        %%%% BEGIN OLD CODE
         %         Qvec(1)         = getFlowRateIn(simTime,...
         %             CardiacOut, CardiacPeak, Tcard);
         %         Q_zero_nphalf   = getFlowRateIn(simTime + 0.5*delK,...
         %             CardiacOut, CardiacPeak, Tcard);
+        %%%% END OLD CODE
         
-        %%%% NEW CODE
-        %------------
+        %%%% BEGIN NEW CODE
         Qvec(1)         = getFlowRateIn(simTimeP,...
             CardiacOut, CardiacPeak, Tcard);
         Q_zero_nphalf   = getFlowRateIn(simTimeP + 0.5*delK,...
             CardiacOut, CardiacPeak, Tcard);
+        %%%% END NEW CODE
+        
         if ( isCopyOlufsen == 1 )
-            Q_half_nphalf   = 0.5*(Qvec(2) + Qvec(1)) - ...
+            Q_half_nphalf   = 0.5*(Qold(2) + Qold(1)) - ...
                 (delK/(2.0*Cu(1)*delH))*(R_1_n(2) - R_0_n(2)) + ...
                 (delK/(4.0*Cu(1)))*(S_1_n(2) + S_0_n(2));
         else
-            Q_half_nphalf   = 0.5*(Qvec(2) + Qvec(1)) - ...
+            Q_half_nphalf   = 0.5*(Qold(2) + Qold(1)) - ...
                 (delK/(2.0*delH))*(R_1_n(2) - R_0_n(2)) + ...
                 (delK/4.0)*(S_1_n(2) + S_0_n(2));
         end
+        
         Avec(1) = Aold(1) - (2.0*delK/delH)*(Q_half_nphalf - Q_zero_nphalf);
         
-        plotFlowRateIn(5,CardiacOut,CardiacPeak,Tcard);
+        %plotFlowRateIn(5,CardiacOut,CardiacPeak,Tcard);
         
         % c. loop through the interior nodes:
         %------------------------------------
@@ -463,7 +489,7 @@ for periodCount = 1:numPeriods
             % c.11. calculate U_{x-1/2}^{t+1/2}:
             %-----------------------------------
             if ( isCopyOlufsen == 1 )
-                U_Xm_Tp_half(1) = 0.5*(U_X_T(1) + U_Xm1_T(2)) - ...
+                U_Xm_Tp_half(1) = 0.5*(U_X_T(1) + U_Xm1_T(1)) - ...
                     (0.5*delK/delH)*(R_X_T(1) - R_Xm1_T(1)) + ...
                     (delK/4.0)*(S_X_T(1) + S_Xm1_T(1));
                 
@@ -557,15 +583,11 @@ for periodCount = 1:numPeriods
             
             %%%% NOTE: NEED TO CHECK TIME INDEXING:
             
-%             %%%% OLD CODE
-%             solA(timeCounter, x) = Avec(x);
-%             solQ(timeCounter, x) = Qvec(x);
-%             %%%% END OLD CODE
+            %%%% OLD CODE
+            %solA(timeCounter, x) = Avec(x);
+            %solQ(timeCounter, x) = Qvec(x);
+            %%%% END OLD CODE
             
-            %%%% NEW CODE
-            solA(timecounter+1, x) = Avec(x);
-            solQ(timeCounter+1, x) = Qvec(x);
-            %%%% END NEW CODE
         end
         
         % d. apply boundary condition at the ending point
@@ -578,18 +600,21 @@ for periodCount = 1:numPeriods
         %--------------------------------------
         nPeriod = timeCounter;
         if ( isMethodCharacteristics == 1 )
-            [A,Q] = characteristicOutflow(nPeriod+1, yTree_T);
-            Qvec(end) = Q;
-            Avec(end) = A;
+            [A,Q] = characteristicOutflow(nPeriod,yTree_T);
+            %[A,Q] = characteristicResistance(nP
+            Qvec(nnodes) = Q;
+            Avec(nnodes) = A;
+            Qvec
+            Avec
             % e. update all nodal solution values in the global solution arrays
             %------------------------------------------------------------------
             solA(timeCounter,:) = Avec(:);
             solQ(timeCounter,:) = Qvec(:);
             
-            solA_m_n(timeCounter,2)         = Avec(end);
-            solQ_m_n(timeCounter,2)         = Qvec(end);
-            solA_mm1_n(timeCounter,2)       = Avec(end-1);
-            solQ_mm1_n(timeCounter,2)       = Qvec(end-1);
+            solA_m_n(timeCounter,2)         = Avec(nnodes);
+            solQ_m_n(timeCounter,2)         = Qvec(nnodes);
+            solA_mm1_n(timeCounter,2)       = Avec(nnodes-1);
+            solQ_mm1_n(timeCounter,2)       = Qvec(nnodes-1);
         else
             % d.2. create the vector for iterative solution guess:
             %-----------------------------------------------------
@@ -675,7 +700,7 @@ for periodCount = 1:numPeriods
         end
         
         
-        
+        plot([1:50],solQ(timeCounter,:));
     end
     
 end

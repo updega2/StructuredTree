@@ -7,8 +7,21 @@
 %--------------------------------------------------------------------------
 function P = getPressure(a_A,a_R0,a_P0)
 global Elast wallH             % mechanical properties of vessel wall
+global expModelK1 expModelK2 expModelK3
+global isMaterialExpModel
 
 A0      = pi*a_R0*a_R0;
-coeff   = 4.0*Elast*wallH/(3.0*a_R0);
 
-P       = a_P0 + coeff*(1.0 - sqrt(A0/a_A));
+if ( isMaterialExpModel == 1 )
+    f = (4.0/3.0)*(expModelK1*exp(expModelK2*a_R0) + expModelK3);
+else
+    f   = 4.0*Elast*wallH/(3.0*a_R0);
+end
+
+P       = a_P0 + f*(1.0 - sqrt(A0/a_A));
+
+%if P < 0
+%    P
+%    error('Negative Pressure Value');
+%end
+

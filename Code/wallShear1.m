@@ -15,4 +15,4 @@ if (a_A <0)
 end
 
 R      = sqrt(a_A/pi);
-tauRHS = - 2.0*pi*Nu*R*a_Q/(wallDelta*a_A);
+tauRHS = - (2.0*pi*Nu*R*a_Q)/(wallDelta*a_A);

@@ -1,4 +1,4 @@
-function [A,Q] = characteristicOutflow(a_N, a_Admittances)
+function [A,Q] = characteristicResistance(a_N)
 
 global nnodes                   % number of spatial nodes
 global nsteps                   % number of time-steps
@@ -82,9 +82,9 @@ if ( isCopyOlufsen == 1 )
     C_R = C_T - ((Q_T/A_T) + C_T)*(delK/delH)*(C_T - C_A);
 else
     x0 = [A_T, Q_T, C_T];
-    g1 = @(x) A_T - ((x(2)/x(1)) + x(3))*(delK/delH)*(A_T - A_A);
-    g2 = @(x) Q_T - ((x(2)/x(1)) + x(3))*(delK/delH)*(Q_T - Q_A);
-    g3 = @(x) C_T - ((x(2)/x(1)) + x(3))*(delK/delH)*(C_T - C_A);
+    g1 = @(x) A_T - ((x(2)/x(1)) + x(3))*(delK/delH)*(A_T - A_A) - x(1);
+    g2 = @(x) Q_T - ((x(2)/x(1)) + x(3))*(delK/delH)*(Q_T - Q_A) - x(2);
+    g3 = @(x) C_T - ((x(2)/x(1)) + x(3))*(delK/delH)*(C_T - C_A) - x(3);
     [xFin, gVal] = fsolve(@(x)[g1(x), g2(x), g3(x)], x0);
     A_R = xFin(1);
     Q_R = xFin(2);
@@ -117,39 +117,38 @@ speedC0     = sqrt(f/(2.0*rho));
 H_R_plus    = -((coeff_C1*A_R + coeff_C2*sqrt(A_R))/rho) + (coeff_C3/A_R);
 H_R_plus    = H_R_plus/(-((Q_R/A_R) + C_R));
 
-% Calculate Q_tms:
-%-----------------
-Q_tms = 0.0;
-for countK = 2:nsteps
-   if ( a_N - countK >= 0 ) 
-       % Calculate A_Q^{n-k}from current period:
-       %----------------------------------------
-       A_Q_nmk = solA(countK, 2);
-   else
-       % Calculate A_Q^{n-k} from previous period:
-       %------------------------------------------
-       A_Q_nmk = solA(countK,1);
-   end
-   P_Q_nmk  = getPressure(A_Q_nmk,R0,P0);
-   Q_tms    = Q_tms + P_Q_nmk*a_Admittances(countK)*delK;
-end
-
 denomTerm = -(Q_R/A_R) + C_R;
 
-nlEqAQ = @(x)x + getPressure(x,R0,P0)*a_Admittances(1)*(delK/denomTerm) + ...
-    (Q_tms/denomTerm) - (Q_R/denomTerm) - A_R - (H_R_plus*delK);
+Resistance = 33330500;    %%Arbitrary resistance set to give 1 cm^3/s flow
+isFsolve = 0;
+if isFsolve
+    nlEqAQ = @(x)x + (getPressure(x,R0,P0)/(Resistance*denomTerm)) - A_R...
+        - (Q_R/denomTerm) - (H_R_plus*delK);
+    
+    AQ0 = A_T;
+    [A_Q, gVal] = fsolve(nlEqAQ, A_T);
+    gVal;
+    A   = A_Q;
+else
+    maxIter = 30;
+    tol = 1e-4;
+    eIter = 2*tol;
+    A_Q = A_T;
+    numIter = 0;
+    while eIter > tol && numIter < maxIter
+        A = -(getPressure(A_Q,R0,P0)/(Resistance*denomTerm)) + A_R...
+            + (Q_R/denomTerm) + (H_R_plus*delK);
+        eIter = (abs(A - A_Q))/(abs(A - A_T));
+        A_Q = A;
+        numIter = numIter +1;
+    end
+end
+        
+    
 
-AQ0 = A_T;
-
-[A_Q, gVal] = fsolve(nlEqAQ, A_T);
-gVal
-
-A   = A_Q;
 
 % Calculate Q_Q:
 %---------------
-getPressure(A_Q, R0, P0)
-a_Admittances(1)*delK
-Q_tms
-Q_Q = getPressure(A_Q, R0, P0)*a_Admittances(1)*delK + Q_tms;
+
+Q_Q = getPressure(A_Q, R0, P0)*(1/Resistance);
 Q   = Q_Q;

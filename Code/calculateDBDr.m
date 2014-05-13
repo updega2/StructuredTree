@@ -16,39 +16,17 @@ global expModelK1 expModelK2 expModelK3
 
 P = getPressure(a_A,a_R0,a_P0);
 A0= pi*a_R0*a_R0;
-
-%numTerm1 = (2.0*pi*a_R0/rho)*(P - a_P0);
-%denTerm1 = 1.0 - (3.0*a_R0/(4.0*Elast*wallH))*(P - a_P0);
-
-%P
-%a_P0
-
-%u = (A0/rho)*(P-a_P0);
-%v = sqrt(A0/a_A);
-
-% rho
-% Elast
-% wallH
-
-%dudr = (((2*pi*a_R0)/rho)*(P-a_P0))-((4*Elast*wallH*pi)/(3*rho));
-%dvdr = sqrt(pi/a_A);
-
-%if abs(denTerm1) < 10^-30
-%pause;
-%end
+R = sqrt(a_A/pi);
 
 
-%numTerm2 = (3.0*A0/(4.0*Elast*wallH*rho))*(P - a_P0)*(P - a_P0);
-%denTerm2 = denTerm1^2;
-%if abs(denTerm2) < 10^-30
-%    pause;
-%end
 if ( isMaterialExpModel == 1 )
     f = (4.0/3.0)*(expModelK1*exp(expModelK2*a_R0) + expModelK3);
-    dBdR0 = -f*pi/rho;
+    dfdR0 = (4.0/3.0)*(expModelK1*expModelK2)*exp(expModelK2*a_R0);
 else
-    dBdR0 = -(4.0*Elast*wallH*pi)/(3.0*rho);
+    f = (4.0*Elast*wallH)/(3.0*a_R0);
+    dfdR0 = -(4.0*Elast*wallH)/(3.0*(a_R0*a_R0));
 end
-%dBdR0 = ((dudr*v)-(u*dvdr))/(v*v)
 
-%dBdR0 = (numTerm1/denTerm1) + (numTerm2/denTerm2);
+term1 = dfdR0*((pi*a_R0*R-pi*a_R0*a_R0)/rho);
+term2 = (f/rho)*(pi*R-2*pi*a_R0);
+dBdR0 = term1+term2;

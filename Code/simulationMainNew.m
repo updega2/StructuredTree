@@ -44,8 +44,6 @@ global solQ_m_n                 % array to store Q_m^n
 global solA_m_n                 % array to store A_m^n
 global solQ_mm1_n               % array to store Q_{m-1}^n
 global solA_mm1_n               % array to store A_{m-1}^n
-global solA
-global solQ
 
 global isMatlabNonLinSolve
 global isMethodCharacteristics
@@ -53,10 +51,14 @@ global isCopyOlufsen
 global isMaterialExpModel
 global expModelK1 expModelK2 expModelK3
 
-isMaterialExpModel = 0;
-isCopyOlufsen = 1;
+isMaterialExpModel = 1;
+isCopyOlufsen = 0;
 isMatlabNonLinSolve = 1;
 isMethodCharacteristics = 1;
+
+expModelK1 = 2.0*10^6;
+expModelK2 = -2253.0;
+expModelK3 = 8.65*10^4;
 
 Imat = [1.0,0.0;0.0,1.0];
 
@@ -135,10 +137,7 @@ end
 Mu = Nu * rho;
 
 %% Create Spatial and Temporal Discretisations:
-%--------------------------------------------------------------------------
-%delK = Tcard/nsteps;       %%%% OLD CODE
-%delH = (X1 - X0)/nnodes;   %%%% NEW CODE
-
+%-------------------------------------------------------------------------
 Xvec = linspace(X0, X1, nnodes);    % The vector for x coordinates
 Tvec = linspace(0, Tcard, nsteps);  % The vector for time in cardiac period
 delK = Tvec(2) - Tvec(1);
@@ -171,9 +170,6 @@ end
 
 %% Fix a chosen value for flow-rate to initialize (let it be 1 for now):
 %--------------------------------------------------------------------------
-%Qstart = getFlowRateIn(0,CardiacOut,CardiacPeak,Tcard);
-%Qstart = getFlowRateIn(0.01,CardiacOut,CardiacPeak,Tcard)
-%Qstart = 1*10^-30;
 Qstart = 1*10^-6;
 
 %% Initialize the solution vectors:
@@ -193,27 +189,6 @@ for timecounter = 1:nsteps
     solQ(timecounter,:) = Qstart;
 end
 
-%%%% OLD CODE:
-% % for iterations Q, and A at X_{end+1/2} need to be stored for current and
-% % previous cardic cycles:
-% %--------------------------------------------------------------------------
-% solQ_mp_np_half     = ones(nsteps, 2)*10^-30;
-% solA_mp_np_half     = ones(nsteps, 2)*10^-30;
-%
-% % for iterations Q, and A at X_{end} need to be stored for previous and
-% % current cardiac cycles respectively columnwise:
-% %---------------------------------------------------------------------
-% solQ_m_n          = ones(nsteps, 2)*10^-30;
-% solA_m_n          = ones(nsteps, 2)*10^-30;
-%
-% % for iterations Q, and A at X_{end-1} need to be stores for previous and
-% % and current cardiac cycles respectively columnwise:
-% %-----------------------------------------------------------------------
-% solQ_mm1_n         = ones(nsteps, 2)*10^-30;
-% solA_mm1_n         = ones(nsteps, 2)*10^-30;
-%%%% END OLD CODE
-
-%%%% NEW CODE
 solQ_mp_np_half     = zeros(nsteps, 2);
 solA_mp_np_half     = zeros(nsteps, 2);
 solQ_m_n            = zeros(nsteps, 2);
@@ -222,7 +197,6 @@ solQ_mm1_n          = zeros(nsteps, 2);
 solA_mm1_n          = zeros(nsteps, 2);
 Aold                = zeros(1, nnodes);
 Qold                = zeros(1, nnodes);
-%%%% END NEW CODE
 
 %% Build a tree for the outlet:
 %--------------------------------------------------------------------------
@@ -298,22 +272,11 @@ for periodCount = 1:numPeriods
     % Add Initial Conditions For The Cardiac Period Solutions:
     %---------------------------------------------------------
     if ( periodCount == 1 )
-        %------------------------------------------------------------------
-        % retain original initialization for all interior nodes, but ensure
-        % boundary conditions are satisfied for all boundary nodes:
-        %------------------------------------------------------------------
-        % solA(1,2:nnodes-1) remain unchanged
-        % solQ(1,2:nnodes-1) remain unchanged
-        % solA(1,1) should match initial area values at the left boundary,
-        % and therefore should also remain unchanged
-        % solQ(1,1) should match flowrate value at time t = 0
         solQ(1,1) = getFlowRateIn(Tvec(1), CardiacOut, CardiacPeak, Tcard);
-        % solA(1,end) should match initial area values at the right
-        % boundary, and therefore should also remain unchanged
-        % solQ(1,end) should match impedance condition with all Q_tms terms
-        % being appropriately approximated
-        Resistance = 0.0552;    %%Arbitrary resistance set to give 1 cm^3/s flow
-        solQ(1,end) = getPressure(solA(1,end),R0(end),P0)/Resistance%*yTree_T(1)*delK;
+        
+        Resistance = 33330500;    
+        solQ(1,end) = getPressure(solA(1,end),R0(end),P0)/Resistance;
+        solQ(1,end)
     else
         %------------------------------------------------------------------
         % get the first time instant (T=0) for the N+1'th period to match
@@ -324,42 +287,17 @@ for periodCount = 1:numPeriods
         solQ(1,:) = solQ(nsteps,:);
     end
     
+    
     % loop through the time-steps in a cardiac cycle. note that we are
     % going to calculate the solution at time = timeCounter, from the
     % solution at time = timeCounter - 1, in an explicit manner
     %----------------------------------------------------------------------
     for timeCounter = 2:nsteps
-        
-        
-        %         %%%% BEGIN OLD CODE
-        %         if timeCounter == 1
-        %             if periodCount == 1
-        %                 Aold    = A0;      % old nodal areas
-        %                 Qold(:) = Qstart;  % old nodal flowrates
-        %             else
-        %                 Aold = solA(nsteps,:);
-        %                 Qold = solQ(nsteps,:);
-        %             end
-        %         else
-        %             Aold = solA(timeCounter-1,:);
-        %             Qold = solQ(timeCounter-1,:);
-        %         end
-        %
-        %         %Avec = Aold;
-        %         %Qvec = Qold;
-        %         %%%% END OLD CODE
-        
-        % a. update simulation time and get the corresponding index:
-        %-----------------------------------------------------------
-        %         %%% BEGIN OLD CODE
-        %         simTime = mod(delK*(timeCounter), Tcard);
-        %         simTime
-        %         %%% END OLD CODE
-        
-%         %%% BEGIN NEW CODE
-         simTimeP = Tvec(timeCounter);
-         simTime  = simTime + simTimeP;
-%         %%% END NEW CODE
+        fprintf('Time %i Period %i \n',timeCounter,periodCount);
+   
+        simTimeP = Tvec(timeCounter);
+        simTime  = simTime + simTimeP;
+
 
         Aold = solA(timeCounter-1,:);
         Qold = solQ(timeCounter-1,:);
@@ -378,19 +316,10 @@ for periodCount = 1:numPeriods
         
         % b.3. update the solutions at the inlet:
         %----------------------------------------
-        %%%% BEGIN OLD CODE
-        %         Qvec(1)         = getFlowRateIn(simTime,...
-        %             CardiacOut, CardiacPeak, Tcard);
-        %         Q_zero_nphalf   = getFlowRateIn(simTime + 0.5*delK,...
-        %             CardiacOut, CardiacPeak, Tcard);
-        %%%% END OLD CODE
-        
-        %%%% BEGIN NEW CODE
         Qvec(1)         = getFlowRateIn(simTimeP,...
             CardiacOut, CardiacPeak, Tcard);
         Q_zero_nphalf   = getFlowRateIn(simTimeP + 0.5*delK,...
             CardiacOut, CardiacPeak, Tcard);
-        %%%% END NEW CODE
         
         if ( isCopyOlufsen == 1 )
             Q_half_nphalf   = 0.5*(Qold(2) + Qold(1)) - ...
@@ -404,13 +333,13 @@ for periodCount = 1:numPeriods
         
         Avec(1) = Aold(1) - (2.0*delK/delH)*(Q_half_nphalf - Q_zero_nphalf);
         
-        %plotFlowRateIn(5,CardiacOut,CardiacPeak,Tcard);
         
         % c. loop through the interior nodes:
         %------------------------------------
+        
         for x = 2:(nnodes-1)
             
-            fprintf('Node %i Time %i Period %i \n',x,timeCounter,periodCount);
+            %fprintf('Node %i Time %i Period %i \n',x,timeCounter,periodCount);
             
             U_X_T   = transpose([Aold(x), Qold(x)]);
             U_Xp1_T = transpose([Aold(x+1), Qold(x+1)]);
@@ -429,17 +358,17 @@ for periodCount = 1:numPeriods
             %------------------------
             R_X_T = getFluxVector(Aold(x),Qold(x),R0(x),P0);
             
-            % c.4. calculate (dR0/dX)_{x+1/2}^t:
+            % c.4. calculate (dR0/dX)_{x+1}^t:
             %-----------------------------------
             if ( isR0function == 1 )
                 dR0dX_Xp1_T = diffR0function(Xvec(x+1),...
                     Rtop, Rbottom, LenVessel);
             else
-                if ( x == nnodes-1 )
-                    dR0dX_Xp1_T   = (R0(x+1) - R0(x))/delH;
-                else
-                    dR0dX_Xp1_T   = (R0(x+2) - R0(x))/(2.0*delH);
-                end
+%                 if ( x == nnodes-1 )
+%                     dR0dX_Xp1_T   = (R0(x+1) - R0(x))/delH;
+%                 else
+%                    dR0dX_Xp1_T   = (R0(x+2) - R0(x))/(2.0*delH);
+%                 end
             end
             
             % c.5. calculate S_{x+1}^t:
@@ -453,11 +382,11 @@ for periodCount = 1:numPeriods
                 dR0dX_Xm1_T = diffR0function(Xvec(x-1),...
                     Rtop, Rbottom, LenVessel);
             else
-                if ( x == 2 )
-                    dR0dX_Xm1_T = (R0(2) - R0(1))/delH;
-                else
-                    dR0dX_Xm1_T = (R0(x) - R0(x-2))/(2.0*delH);
-                end
+%                 if ( x == 2 )
+%                     dR0dX_Xm1_T = (R0(2) - R0(1))/delH;
+%                 else
+%                     dR0dX_Xm1_T = (R0(x) - R0(x-2))/(2.0*delH);
+%                 end
             end
             
             % c.7. calculate S_{x-1}^t:
@@ -471,7 +400,7 @@ for periodCount = 1:numPeriods
                 dR0dX_X_T = diffR0function(Xvec(x),...
                     Rtop, Rbottom, LenVessel);
             else
-                dR0dX_X_T = (R0(x+1) - R0(x-1))/(2.0*delH);
+%                 dR0dX_X_T = (R0(x+1) - R0(x-1))/(2.0*delH);
             end
             S_X_T = getSourceVector(Aold(x),Qold(x),R0(x),dR0dX_X_T,P0);
             
@@ -526,12 +455,21 @@ for periodCount = 1:numPeriods
             
             % calculate R0_{x+1/2}:
             %----------------------
-            R0_Xp_half = 0.5*(R0(x+1) + R0(x));
+            if (isR0function)
+                R0_Xp_half = getR0function(Xvec(x)+0.5*delH,Rtop,...
+                    Rbottom,LenVessel);
+            else
+                R0_Xp_half = 0.5*(R0(x+1) + R0(x));
+            end
             
             % calculate R0_{x-1/2}:
             %----------------------
-            R0_Xm_half = 0.5*(R0(x-1) + R0(x));
-            
+            if (isR0function)
+                R0_Xm_half = getR0function(Xvec(x)-0.5*delH,Rtop,...
+                    Rbottom,LenVessel);
+            else
+                R0_Xm_half = 0.5*(R0(x-1) + R0(x));
+            end
             % calculate R_{x+1/2}^{t+1/2}:
             %-----------------------------
             R_Xp_Tp_half = getFluxVector(A_Xp_Tp_half, Q_Xp_Tp_half, ...
@@ -544,11 +482,22 @@ for periodCount = 1:numPeriods
             
             % calculate (dR0/dX)_{x+1/2}:
             %----------------------------
-            dR0dX_Xp_half = 0.5*(dR0dX_Xp1_T + dR0dX_X_T);
+            if (isR0function)
+                dR0dX_Xp_half = diffR0function(Xvec(x)+0.5*delH,Rtop,...
+                    Rbottom,LenVessel);
+            else
+                dR0dX_Xp_half = 0.5*(dR0dX_Xp1_T + dR0dX_X_T);
+            end
             
             % calculate (dR0/dX)_{x-1/2}:
             %----------------------------
-            dR0dX_Xm_half = 0.5*(dR0dX_X_T + dR0dX_Xm1_T);
+            if (isR0function)
+                dR0dX_Xm_half = diffR0function(Xvec(x)-0.5*delH,Rtop,...
+                    Rbottom,LenVessel);
+            else
+                dR0dX_Xm_half = 0.5*(dR0dX_Xm1_T + dR0dX_X_T);
+            end
+
             
             % calculate S_{x+1/2}^{t+1/2}:
             %-----------------------------
@@ -587,24 +536,13 @@ for periodCount = 1:numPeriods
                 error('Avec is negative');
             end
             
-            %%%% NOTE: NEED TO CHECK TIME INDEXING:
-            
-            %%%% OLD CODE
-            %solA(timeCounter, x) = Avec(x);
-            %solQ(timeCounter, x) = Qvec(x);
-            %%%% END OLD CODE
-            
         end
         
         % d. apply boundary condition at the ending point
         %------------------------------------------------
-        % d.1. get the ifft of the impedances:
-        %-------------------------------------
-        %zTree_T = ifft(zTree_F)
         
         % d.3. continue the iterative solution:
         %--------------------------------------
-        timeCounter
         %plot(linspace(1,nnodes,nnodes),Qvec);
         nPeriod = timeCounter;
         if ( isMethodCharacteristics == 1 )
@@ -612,8 +550,8 @@ for periodCount = 1:numPeriods
             [A,Q] = characteristicResistance(nPeriod);
             Qvec(nnodes) = Q;
             Avec(nnodes) = A;
-            Qvec
-            Avec
+            Qvec;
+            Avec;
             % e. update all nodal solution values in the global solution arrays
             %------------------------------------------------------------------
             solA(timeCounter,:) = Avec(:);
@@ -677,7 +615,7 @@ for periodCount = 1:numPeriods
                 f3 = @(x) getNonLinearEq3(x, nPeriod, yTree_T);
                 f4 = @(x) getNonLinearEq4(x, nPeriod, yTree_T);
                 [xNew, fVal] = fsolve(@(x)[f1(x), f2(x), f3(x), f4(x)], xIter0);
-                fVal
+                fVal;
             else
                 while (errIter > errTol)
                     fX(1)   = getNonLinearEq1(xIter, nPeriod, yTree_T);
@@ -707,7 +645,10 @@ for periodCount = 1:numPeriods
             solQ_mp_np_half(timeCounter,2)  = xIter(1);
         end
         
-        plot(linspace(1,nnodes,nnodes),solQ(timeCounter,:));
+        kcfl = checkCFL(solA(timeCounter,:),solQ(timeCounter,:));
+        %plot(linspace(1,nnodes,nnodes),solA(timeCounter,:));
+        %hold on;
+        %plot(linspace(1,nnodes,nnodes),A0,'r')
     end
     
 end
