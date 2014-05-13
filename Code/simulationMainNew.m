@@ -275,6 +275,7 @@ for periodCount = 1:numPeriods
         solQ(1,1) = getFlowRateIn(Tvec(1), CardiacOut, CardiacPeak, Tcard);
         
         Resistance = 33330500;    
+        %Resistance = 333305; 
         solQ(1,end) = getPressure(solA(1,end),R0(end),P0)/Resistance;
         solQ(1,end)
     else
@@ -546,8 +547,8 @@ for periodCount = 1:numPeriods
         %plot(linspace(1,nnodes,nnodes),Qvec);
         nPeriod = timeCounter;
         if ( isMethodCharacteristics == 1 )
-            %[A,Q] = characteristicOutflow(nPeriod,yTree_T);
-            [A,Q] = characteristicResistance(nPeriod);
+            [A,Q] = characteristicOutflow(nPeriod,yTree_T);
+            %[A,Q] = characteristicResistance(nPeriod);
             Qvec(nnodes) = Q;
             Avec(nnodes) = A;
             Qvec;

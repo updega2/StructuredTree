@@ -119,7 +119,8 @@ H_R_plus    = H_R_plus/(-((Q_R/A_R) + C_R));
 
 denomTerm = -(Q_R/A_R) + C_R;
 
-Resistance = 33330500;    %%Arbitrary resistance set to give 1 cm^3/s flow
+Resistance = 33330500;   
+%Resistance = 333305;
 isFsolve = 0;
 if isFsolve
     nlEqAQ = @(x)x + (getPressure(x,R0,P0)/(Resistance*denomTerm)) - A_R...
