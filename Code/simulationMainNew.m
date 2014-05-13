@@ -234,7 +234,7 @@ zTree_F(nsteps/2) = temp;
 if isCopyOlufsen
     zTree_T = real(ifft(fftshift(zTree_F)/Tcard,'symmetric'));
 else
-    zTree_T = real(ifft(fftshift(zTree_F)/Tcard,'symmetric'));
+    zTree_T = real(ifft(zTree_F,'symmetric'));
 end
 
 yTree_T = 1./zTree_T;
@@ -276,7 +276,8 @@ for periodCount = 1:numPeriods
         
         Resistance = 33330500;    
         %Resistance = 333305; 
-        solQ(1,end) = getPressure(solA(1,end),R0(end),P0)/Resistance;
+        %solQ(1,end) = getPressure(solA(1,end),R0(end),P0)/Resistance;
+        solQ(1,end) = getPressure(solA(1,end),R0(end),P0)*yTree_T(1)*delK;
         solQ(1,end)
     else
         %------------------------------------------------------------------
