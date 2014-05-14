@@ -54,7 +54,7 @@ global expModelK1 expModelK2 expModelK3
 isMaterialExpModel = 1;
 isCopyOlufsen = 0;
 isMatlabNonLinSolve = 1;
-isMethodCharacteristics = 0;
+isMethodCharacteristics = 1;
 
 expModelK1 = 2.0*10^6;
 expModelK2 = -2253.0;
@@ -201,7 +201,7 @@ Qold                = zeros(1, nnodes);
 %% Build a tree for the outlet:
 %--------------------------------------------------------------------------
 flowTree = Tree(rootR);
-flowTree.BuildTree(Rmin,10,0.5,0.5);
+flowTree.BuildTree(Rmin,10,0.9,0.6);
 
 k = [(-nsteps/2):1:(nsteps/2)];
 freqVec = ((2.*pi*k)/Tcard);
@@ -275,9 +275,9 @@ for periodCount = 1:numPeriods
         solQ(1,1) = getFlowRateIn(Tvec(1), CardiacOut, CardiacPeak, Tcard);
         
         Resistance = 33330500;    
-        %Resistance = 333305; 
-        %solQ(1,end) = getPressure(solA(1,end),R0(end),P0)/Resistance;
-        solQ(1,end) = getPressure(solA(1,end),R0(end),P0)*yTree_T(1)*delK;
+        %Resistance = 3333; 
+        solQ(1,end) = getPressure(solA(1,end),R0(end),P0)/Resistance;
+        %solQ(1,end) = getPressure(solA(1,end),R0(end),P0)*yTree_T(1)*delK;
         solQ(1,end);
     else
         %------------------------------------------------------------------
@@ -548,8 +548,8 @@ for periodCount = 1:numPeriods
         %plot(linspace(1,nnodes,nnodes),Qvec);
         nPeriod = timeCounter;
         if ( isMethodCharacteristics == 1 )
-            [A,Q] = characteristicOutflow(nPeriod,yTree_T);
-            %[A,Q] = characteristicResistance(nPeriod);
+            %[A,Q] = characteristicOutflow(nPeriod,yTree_T);
+            [A,Q] = characteristicResistance(nPeriod);
             Qvec(nnodes) = Q;
             Avec(nnodes) = A;
             Qvec;

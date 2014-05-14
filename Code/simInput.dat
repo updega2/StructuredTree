@@ -1,5 +1,5 @@
 Number-Of-Spatial-Nodes
-50
+100
 Number-Of-Temporal-Nodes
 5000
 Cardiac-Period
@@ -41,5 +41,5 @@ Initial-Radius-Is-A-Function
 Iterative-Error-Tolerance
 0.005
 Minimum-Radius
-0.0001
+0.0002
 End-Of-File

@@ -57,7 +57,7 @@ load -ascii ../runs/q1.2d;
 set(gca,'FontSize',18);
 legend('Simulations');
 set(gca,'FontSize',22);
-axis([3.25 4.3 -50 450]);
+axis([3.2 4.3 -50 450]);
 title('Aorta','Fontsize',24);
 grid on;
 xlabel('t [s]');

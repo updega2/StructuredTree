@@ -85,7 +85,8 @@ else
     g1 = @(x) A_T - ((x(2)/x(1)) + x(3))*(delK/delH)*(A_T - A_A) - x(1);
     g2 = @(x) Q_T - ((x(2)/x(1)) + x(3))*(delK/delH)*(Q_T - Q_A) - x(2);
     g3 = @(x) C_T - ((x(2)/x(1)) + x(3))*(delK/delH)*(C_T - C_A) - x(3);
-    [xFin, gVal] = fsolve(@(x)[g1(x), g2(x), g3(x)], x0);
+    options = optimset('Display','off');
+    [xFin, gVal] = fsolve(@(x)[g1(x), g2(x), g3(x)], x0,options);
     A_R = xFin(1);
     Q_R = xFin(2);
     C_R = xFin(3);
@@ -120,7 +121,7 @@ H_R_plus    = H_R_plus/(-((Q_R/A_R) + C_R));
 denomTerm = -(Q_R/A_R) + C_R;
 
 Resistance = 33330500;   
-%Resistance = 333305;
+%Resistance = 3333;
 isFsolve = 0;
 if isFsolve
     nlEqAQ = @(x)x + (getPressure(x,R0,P0)/(Resistance*denomTerm)) - A_R...
