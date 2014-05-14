@@ -36,6 +36,7 @@ public:
   double pts;                  // The number of grid points per cm
   double K_loss;
   double ff1, ff2, ff3;
+  double termresist;
 
   int N;                       // The number of grid points along the vessel
   double h;                    // The interval length of delta x
@@ -59,7 +60,7 @@ public:
         double topradius, double botradius,
         Tube *LeftDaughter, Tube *RightDaughter,
         double rmin, double points, int init, double K,
-        double f1, double f2, double f3);
+        double f1, double f2, double f3, double trmrst);
                                                          // Constructor.
   ~Tube ();                                              // Destructor.
 

@@ -152,53 +152,54 @@ int main(int argc, char *argv[])
   // Right Radial: Estimate.
 
   // Initialization of the vessel-network.
-  Arteries[23] = new Tube(44.0,0.3973,0.300,0,0,rm3,4,0,0,f1,f2,f3AB);
+  // DEBANJAN: WE HAVE ADDED A LAST TERM TO SIMULATE A TERMINAL RESISTANCE TO ALL OF THESE CONSTRUTORS
+  Arteries[23] = new Tube(44.0,0.3973,0.300,0,0,rm3,4,0,0,f1,f2,f3AB, 0.0);
   // Femoral: Estimate.
-  Arteries[22] = new Tube(11.0,0.200,0.200,0,0,rm3,4,0,0,f1,f2,f3A);
+  Arteries[22] = new Tube(11.0,0.200,0.200,0,0,rm3,4,0,0,f1,f2,f3A, 0.0);
   // Deep Femoral: Estimate.
-  Arteries[21] = new Tube( 4.5,0.200,0.200,0,0,rm3,4,0,0,f1,f2,f3A);
+  Arteries[21] = new Tube( 4.5,0.200,0.200,0,0,rm3,4,0,0,f1,f2,f3A, 0.0);
   // Internal Iliac: Pure estimate.
-  Arteries[20] = new Tube(13.0,0.4317,0.3973,Arteries[22],Arteries[23],0,4,0,0,f1,f2,f3AB);
+  Arteries[20] = new Tube(13.0,0.4317,0.3973,Arteries[22],Arteries[23],0,4,0,0,f1,f2,f3AB, 0.0);
   // Femoral artery:
-  Arteries[19] = new Tube( 6.5,0.45,0.4317,Arteries[20],Arteries[21],0,4,0,0,f1,f2,f3A);
+  Arteries[19] = new Tube( 6.5,0.45,0.4317,Arteries[20],Arteries[21],0,4,0,0,f1,f2,f3A, 0.0);
   // External Iliac:
-  Arteries[18] = new Tube( 3,0.7292,0.700, Arteries[19],Arteries[19],0,4,0,0,f1,f2,f3A);
+  Arteries[18] = new Tube( 3,0.7292,0.700, Arteries[19],Arteries[19],0,4,0,0,f1,f2,f3A, 0.0);
   // Abdominal Aorta:
-  Arteries[17] = new Tube( 4.0,0.200,0.175,0,0,rm3,4,0,0,f1,f2,f3B);
+  Arteries[17] = new Tube( 4.0,0.200,0.175,0,0,rm3,4,0,0,f1,f2,f3B, 0.0);
   // Inf Mesenteric: Pure estimate.
-  Arteries[16] = new Tube( 6.0,0.7914,0.7292, Arteries[17],Arteries[18],0,4,0,0,f1,f2,f3A);
+  Arteries[16] = new Tube( 6.0,0.7914,0.7292, Arteries[17],Arteries[18],0,4,0,0,f1,f2,f3A, 0.0);
   // Abdominal Aorta:
-  Arteries[15] = new Tube( 3.0,0.275,0.25,0,0,rm2,4,0,0,f1,f2,f3B);
+  Arteries[15] = new Tube( 3.0,0.275,0.25,0,0,rm2,4,0,0,f1,f2,f3B, 0.0);
   // Left Renal: Location and area should be estimated.
-  Arteries[14] = new Tube( 1.0,0.8023,0.7914, Arteries[15],Arteries[16],0,4,0,0,f1,f2,f3A);
+  Arteries[14] = new Tube( 1.0,0.8023,0.7914, Arteries[15],Arteries[16],0,4,0,0,f1,f2,f3A, 0.0);
   // Abdominal Aorta:
-  Arteries[13] = new Tube( 3.0,0.275,0.25,0,0,rm2,4,0,0,f1,f2,f3B);
+  Arteries[13] = new Tube( 3.0,0.275,0.25,0,0,rm2,4,0,0,f1,f2,f3B, 0.0);
   // Right Renal: Location and area should be estimated.
-  Arteries[12] = new Tube( 2.0,0.8245,0.8023, Arteries[13],Arteries[14],0,4,0,0,f1,f2,f3A);
+  Arteries[12] = new Tube( 2.0,0.8245,0.8023, Arteries[13],Arteries[14],0,4,0,0,f1,f2,f3A, 0.0);
   // Abdominal Aorta:
-  Arteries[11] = new Tube( 5.0,0.325,0.325,0,0,rm1,4,0,0,f1,f2,f3B);
+  Arteries[11] = new Tube( 5.0,0.325,0.325,0,0,rm1,4,0,0,f1,f2,f3B, 0.0);
   // Sup. Mes: Area of should be estimated.
-  Arteries[10] = new Tube( 2.0,0.8473,0.8245, Arteries[11],Arteries[12],0,4,0,0,f1,f2,f3A);
+  Arteries[10] = new Tube( 2.0,0.8473,0.8245, Arteries[11],Arteries[12],0,4,0,0,f1,f2,f3A, 0.0);
   // Descending Aorta: Cut to allow for leak from intercostal arteries.
-  Arteries[ 9] = new Tube( 3.0,0.325,0.300,0,0,rm2,4,0,0,f1,f2,f3B);
+  Arteries[ 9] = new Tube( 3.0,0.325,0.300,0,0,rm2,4,0,0,f1,f2,f3B, 0.0);
   // Celiac Axis: Location and area should be estimated.
-  Arteries[ 8] = new Tube(18.75,1.1093,0.8473, Arteries[ 9],Arteries[10],0,4,0,0,f1,f2,f3A);
+  Arteries[ 8] = new Tube(18.75,1.1093,0.8473, Arteries[ 9],Arteries[10],0,4,0,0,f1,f2,f3A, 0.0);
   // Descending Aorta: Cut to allow for leak from intercostal arteries.
-  Arteries[ 7] = new Tube(43.0,0.445,0.165,0,0,rm3,4,0,0,f1,f2,f3A);
+  Arteries[ 7] = new Tube(43.0,0.445,0.165,0,0,rm3,4,0,0,f1,f2,f3A, 0.0);
   // Left Sub: Length and bot radius estimated.
-  Arteries[ 6] = new Tube( 1.0,1.1093,1.10943, Arteries[ 7],Arteries[ 8],0,4,0,0,f1,f2,f3A);
+  Arteries[ 6] = new Tube( 1.0,1.1093,1.10943, Arteries[ 7],Arteries[ 8],0,4,0,0,f1,f2,f3A, 0.0);
   // Aorta des:
-  Arteries[ 5] = new Tube(19.0,0.285,0.275, 0,0,rm12,4,0,0,f1,f2,f3AA);
+  Arteries[ 5] = new Tube(19.0,0.285,0.275, 0,0,rm12,4,0,0,f1,f2,f3AA, 0.0);
   // Left Carotid: Length and bot radius estimated.
-  Arteries[ 4] = new Tube( 1.75,1.1361,1.1093, Arteries[ 5],Arteries[ 6],0,4,0,0.75,f1,f2,f3A);
+  Arteries[ 4] = new Tube( 1.75,1.1361,1.1093, Arteries[ 5],Arteries[ 6],0,4,0,0.75,f1,f2,f3A, 0.0);
   // Aortic arc:
-  Arteries[ 3] = new Tube(17.0,0.285,0.275, 0,0,rm12,4,0,0,f1,f2,f3AA);
+  Arteries[ 3] = new Tube(17.0,0.285,0.275, 0,0,rm12,4,0,0,f1,f2,f3AA, 0.0);
   // Right Carotid: Length and bot radius estimated.
-  Arteries[ 2] = new Tube(43.0,0.445,0.165,0,0,rm3,4,0,0,f1,f2,f3A);
+  Arteries[ 2] = new Tube(43.0,0.445,0.165,0,0,rm3,4,0,0,f1,f2,f3A, 0.0);
   // Right Sub: Data taken from left sub, length and bot radius  estimated !
-  Arteries[ 1] = new Tube( 3.5,0.700,0.700, Arteries[ 2],Arteries[ 3],0,4,0,0,f1,f2,f3AA);
+  Arteries[ 1] = new Tube( 3.5,0.700,0.700, Arteries[ 2],Arteries[ 3],0,4,0,0,f1,f2,f3AA, 0.0);
   // Anonymous: Length estimated - should be measured.
-  Arteries[ 0] = new Tube( 7.0,1.250,1.1361, Arteries[ 1],Arteries[ 4],0,4,1,0,f1,f2,f3A);
+  Arteries[ 0] = new Tube( 7.0,1.250,1.1361, Arteries[ 1],Arteries[ 4],0,4,1,0,f1,f2,f3A, 0.0);
   // Ascending Aorta:
 
   // In the next three statements the simulations are performed until

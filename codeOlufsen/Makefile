@@ -11,7 +11,7 @@
 
 # $Id: Makefile,v 1.8 2010-10-20 14:39:59 heine Exp $
 
-CXX=/opt/local/bin/g++-mp-4.8
+CXX=/opt/local/bin/g++-mp-4.6
 CXXFLAGS=-O2 -g -Wall -D_REENTRANT
 
 ifeq ($(shell arch),ppc)
@@ -19,7 +19,7 @@ FC=/usr/local/bin/g95
 FFLAGS=-O2 -g -Wall -fno-second-underscore
 FLIBS=-L$(shell $(FC) --print-file-name=) -lf95
 else
-FC=/opt/local/bin/gfortran-mp-4.8
+FC=/opt/local/bin/gfortran-mp-4.6
 FFLAGS=-O2 -g -Wall
 FLIBS=-lgfortran
 endif

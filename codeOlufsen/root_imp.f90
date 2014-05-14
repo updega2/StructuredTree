@@ -96,8 +96,8 @@ implicit none
 
   beta  = ((asym**(expo/2)+1.0)**(-1/expo))**beta_pow  ! Scaling parameter.
   alpha = (sqrt(asym)*(asym**(expo/2)+1.0)**(-1/expo))**alpha_pow   ! do.
-  write(*,*) 'Beta',beta
-  write(*,*) 'Alpha',alpha
+  !write(*,*) 'Beta', beta**(1.0d0/beta_pow)
+  !write(*,*) 'Alpha',alpha**(1.0d0/alpha_pow)
 
   generations = alpha_pow + beta_pow  ! The current generation.
 
@@ -301,18 +301,18 @@ end function comp_imp
 !* g         The gravitational force, cm/s^2.                              *
 !*                                                                         *
 !***************************************************************************
-subroutine impedance (tmstps,Period,ff1,ff2,ff3,rho,mu,r_root,r_min,y_xt,Lr,Fr2,q,g)
+subroutine impedance (tmstps,Period,ff1,ff2,ff3,rho,mu,r_root,r_min,y_xt,Lr,Fr2,q,g,trm_rst)
 implicit none
 
   integer,   intent(in)      :: tmstps
-  real(lng), intent(in)      :: Period,ff1,ff2,ff3,rho,mu,Lr,Fr2,q,g,r_root,r_min
+  real(lng), intent(in)      :: Period,ff1,ff2,ff3,rho,mu,Lr,Fr2,q,g,r_root,r_min,trm_rst
 ! real(lng)                  :: z_xt(tmstps)
   real(lng)                  :: y_xt(tmstps)
 
   integer                    :: j
 ! integer                    :: nb_terms
 ! real(lng)                  :: beta, alpha
-  real(lng)                  :: df, Freq(tmstps+1), Omega(tmstps+1), trm_rst
+  real(lng)                  :: df, Freq(tmstps+1), Omega(tmstps+1)!, trm_rst
   complex(lng)               :: Z_hat(tmstps), Y_hat(tmstps)
 
   integer, parameter                  :: nbuf = 2, f1 = 10
@@ -331,7 +331,7 @@ implicit none
   !call counting (0,0,alpha,beta,r_root,r_min,nb_terms)
 
   localmax = 0
-  trm_rst = 0     ! Terminal resistance could be (nb_terms*resist)
+  !trm_rst = 0     ! Terminal resistance could be (nb_terms*resist)
 
   ! Compute the impedance at the root of the structured tree.
   Z_om =comp_imp (tmstps,Omega,trm_rst,ff1,ff2,ff3,rho,mu,r_root,r_min,Lr,Fr2,q,g)
