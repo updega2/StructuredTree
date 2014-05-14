@@ -30,7 +30,7 @@ global solQ_mm1_n               % array to store Q_{m-1}^n
 global solA_mm1_n               % array to store A_{m-1}^n
 
 global isCopyOlufsen
-global isMatlabNonLinSolve 
+global isMatlabSolveCharacteristics 
 global isMaterialExpModel
 global expModelK1 expModelK2 expModelK3
 

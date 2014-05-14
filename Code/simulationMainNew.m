@@ -33,6 +33,9 @@ global errTol
 global Rmin                     % minimum tree radius
 global solA solQ                % arrays for storing solution
 
+global alphaTree
+global betaTree
+
 %----------------------------------------------------
 % Each of these arrays are of size numtimesteps x 2.
 % Column 1 stores solutions for previous time-period
@@ -45,16 +48,18 @@ global solA_m_n                 % array to store A_m^n
 global solQ_mm1_n               % array to store Q_{m-1}^n
 global solA_mm1_n               % array to store A_{m-1}^n
 
-global isMatlabNonLinSolve
+global isMatlabSolveFNonLin
 global isMethodCharacteristics
 global isCopyOlufsen
 global isMaterialExpModel
+global isShiftedImpedanceMethod
 global expModelK1 expModelK2 expModelK3
 
-isMaterialExpModel = 1;
-isCopyOlufsen = 0;
-isMatlabNonLinSolve = 1;
-isMethodCharacteristics = 1;
+isMaterialExpModel          = 1;
+isCopyOlufsen               = 0;
+isMatlabSolveFNonLin        = 1;
+isMethodCharacteristics     = 1;
+isShiftedImpedanceMethod    = 0;
 
 expModelK1 = 2.0*10^6;
 expModelK2 = -2253.0;
@@ -67,7 +72,7 @@ Imat = [1.0,0.0;0.0,1.0];
 % routine.
 
 %--------------------------------------------------------------------------
-% b. Then we ask user to input the simulation input dcleclclcccata file on the
+% b. Then we ask user to input the simulation input data file on the
 % command window:
 %--------------------------------------------------------------------------
 inputFile = input('Enter the simulation input file \n','s');
@@ -143,8 +148,6 @@ Tvec = linspace(0, Tcard, nsteps);  % The vector for time in cardiac period
 delK = Tvec(2) - Tvec(1);
 delH = Xvec(2) - Xvec(1);
 
-% NOTE: need to encode a function to check CFL condition for these
-
 %% Generate a distribution of initial radius values
 %--------------------------------------------------------------------------
 LenVessel = X1-X0;
@@ -203,43 +206,79 @@ Qold                = zeros(1, nnodes);
 flowTree = Tree(rootR);
 flowTree.BuildTree(Rmin,10,0.9,0.6);
 
-k = [(-nsteps/2):1:(nsteps/2)];
-freqVec = ((2.*pi*k)/Tcard);
-
-zTree_F = ones(size(k));
-
-
-for i=1:length(k)
-    indPlus = indexMap(k(i));
-    if k(i) > 0
-        zTree_F(indPlus-1) = flowTree.CalculateImpedance(freqVec(indPlus),1,0,50);
+if ( isShiftedImpedanceMethod == 0 )
+    %%%% ---------------
+    %%%% BEGIN OLD CODE:
+    %%%% ---------------
+    k = [(-nsteps/2):1:(nsteps/2)];
+    freqVec = ((2.*pi*k)/Tcard);
+    
+    zTree_F = ones(size(k));
+    
+    
+    for i=1:length(k)
+        indPlus = indexMap(k(i));
+        if k(i) > 0
+            zTree_F(indPlus-1) = flowTree.CalculateImpedance(freqVec(indPlus),1,0,50);
+        end
     end
-end
-
-for i=1:length(k)
-    if k(i) <= 0
-        indPlus = indexMap(-k(i));
-        indMinus = indexMap(k(i));
-        zTree_F(indMinus) = conj(zTree_F(indPlus));
+    
+    for i=1:length(k)
+        if k(i) <= 0
+            indPlus = indexMap(-k(i));
+            indMinus = indexMap(k(i));
+            zTree_F(indMinus) = conj(zTree_F(indPlus));
+        end
     end
-end
-
-temp = zTree_F(nsteps/2);
-tempTree = zTree_F;
-for i = (nsteps/2):nsteps
-    zTree_F(i+1) = tempTree(i);
-end
-zTree_F(nsteps/2) = temp;
-
-if isCopyOlufsen
-    zTree_T = real(ifft(fftshift(zTree_F)/Tcard,'symmetric'));
-else
+    
+    temp = zTree_F(nsteps/2);
+    tempTree = zTree_F;
+    for i = (nsteps/2):nsteps
+        zTree_F(i+1) = tempTree(i);
+    end
+    zTree_F(nsteps/2) = temp;
+    
+    if isCopyOlufsen
+        zTree_T = real(ifft(fftshift(zTree_F)/Tcard,'symmetric'));
+    else
+        zTree_T = real(ifft(zTree_F,'symmetric'));
+    end
+    
+    yTree_T = 1./zTree_T;
+    %%%% ------------
+    %%%% END OLD CODE
+    %%%% ------------
+    
+elseif ( isShiftedImpedanceMethod == 1 )
+    
+    %%%% --------------
+    %%%% BEGIN NEW CODE
+    %%%% --------------
+    df      = 1.0/Tcard;
+    Fr      = [-(nsteps/2):1:(nsteps/2)]*df;
+    Omega   = 2.0*pi*Fr; % this generates Omega to be (nsteps+1) long
+    
+    zTree_F = ones(size(Fr)); % we initialize the impedance vector
+    
+    for k = (nsteps/2)+1:(nsteps+1)
+        zTree_F(k-1) = flowTree.CalculateImpedance(Omega(k),1,0,50);
+    end
+    
+    temp = zTree_F(nsteps/2);
+    
+    zTree_F(1:(nsteps/2)) = conj(flipud(zTree_F((nsteps/2)+1:nsteps)));
+    
+    zTree_F((nsteps/2)+1:nsteps) = eoshift(zTree_F((nsteps/2)+1:nsteps),-1);
+    
+    zTree_F((nsteps/2)+1) = temp;
+    
     zTree_T = real(ifft(zTree_F,'symmetric'));
+    
+    yTree_T = 1./zTree_T;
+    %%%% ------------
+    %%%% END NEW CODE
+    %%%% ------------
 end
-
-yTree_T = 1./zTree_T;
-%yTree_T = yTree_T;
-
 
 %% Loop through the number of cardiac cycles:
 %-------------------------------------------
@@ -611,7 +650,7 @@ for periodCount = 1:numPeriods
             xIter   = xIter0;
             
             errIter = 10*errTol;
-            if ( isMatlabNonLinSolve == 1 )
+            if ( isMatlabSolveFNonLin == 1 )
                 f1 = @(x) getNonLinearEq1(x, nPeriod, yTree_T);
                 f2 = @(x) getNonLinearEq2(x, nPeriod, yTree_T);
                 f3 = @(x) getNonLinearEq3(x, nPeriod, yTree_T);
