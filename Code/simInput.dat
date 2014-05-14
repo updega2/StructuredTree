@@ -42,4 +42,10 @@ Iterative-Error-Tolerance
 0.005
 Minimum-Radius
 0.0002
+Zeta
+2.76
+Gamma
+0.41
+Length-To-Radius-Ratio
+50
 End-Of-File

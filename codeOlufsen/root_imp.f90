@@ -96,6 +96,8 @@ implicit none
 
   beta  = ((asym**(expo/2)+1.0)**(-1/expo))**beta_pow  ! Scaling parameter.
   alpha = (sqrt(asym)*(asym**(expo/2)+1.0)**(-1/expo))**alpha_pow   ! do.
+  write(*,*) 'Beta',beta
+  write(*,*) 'Alpha',alpha
 
   generations = alpha_pow + beta_pow  ! The current generation.
 

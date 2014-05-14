@@ -30,7 +30,7 @@ double conv   = 1332.20,              // Conversion from mmHg to SI-units.
        mu_pl  = mu,                   // Viscosity of blood [g/cm/s].
        nu     = mu/rho,
 
-       Tper   = 0.8,                 // The period of one heart beat [s].
+       Tper   = 1.10,                 // The period of one heart beat [s].
 
        ff1    = 0.999639e07,
        ff2    = -11.2635,

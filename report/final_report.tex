@@ -57,6 +57,8 @@ As is commonly the case, blood is modeled as an incompressible, non-newtonian fl
 	\partder{q}{t} + \partder{}{x}\Bigg(\frac{q^2}{A}\Bigg) + \frac{A}{p}\partder{p}{x} = -\frac{2R\pi \nu q}{\delta A}
 \end{equation}
 
+These equations are discretized using a Two-Step Lax-Wendroff Richtmyer Discretization. The equations for this scheme are as follows/
+
 Talk about equation to relate pressure to area~\eqref{circ}
 \begin{equation}
 	\label{circ}
@@ -70,11 +72,20 @@ and it gives Equation \eqref{ptoarea}, and ~\eqref{solvedp}
 	p-p_0 = \frac{4Eh}{3} \frac{r-r_0}{r*r_0}
 \end{equation} 
 
-
 \begin{equation}
 	p(x,t) - p_0 = \frac{4}{3} \frac{Eh}{r_0(x)} \Bigg[1 - \sqrt{\frac{A_0(x)}{A(x,t)}}\Bigg]
 	\label{solvedp}
 \end{equation}
+
+We found this to be an issue because the $p_0$ actually over constrains the problem and causes the solution to explode. Therefore, $p_0$ was taken to be zero for our implementation.\
+
+To get the impedance of the Structured Tree at the outflow, the impedance is calculated throughout the tree as a function of frequency. The following convolution integral describes the relationship between pressure, impedance, and flow. 
+
+\begin{equation}
+p(x,t) = \frac{1}{T} \int_{-T/2}^{T/2} z(x,t-\tau) q(x,\tau) d\tau
+\end{equation}
+
+The Inverse Fourier Transform of the impedance is taken in order to get the impedances as a function of time. These impedances are then used to couple the outflow condition to the solution by either using another Lax-Wendroff discretization or a method of Positive Characteristics. Because the method of Positive Characteristics is simpler and easier to explain, it will be described below. 
 
 \section{Methods}
 \subsection{Our Implementation}

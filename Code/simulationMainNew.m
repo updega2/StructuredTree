@@ -32,6 +32,8 @@ global Rtop Rbottom
 global errTol
 global Rmin                     % minimum tree radius
 global solA solQ                % arrays for storing solution
+global gamma zeta
+global lrr
 
 global alphaTree
 global betaTree
@@ -53,13 +55,15 @@ global isMethodCharacteristics
 global isCopyOlufsen
 global isMaterialExpModel
 global isShiftedImpedanceMethod
+global isMaterialExpSmall
 global expModelK1 expModelK2 expModelK3
 
+isMaterialExpSmall          = 0;
 isMaterialExpModel          = 1;
 isCopyOlufsen               = 0;
 isMatlabSolveFNonLin        = 1;
 isMethodCharacteristics     = 1;
-isShiftedImpedanceMethod    = 0;
+isShiftedImpedanceMethod    = 1;
 
 expModelK1 = 2.0*10^6;
 expModelK2 = -2253.0;
@@ -116,7 +120,7 @@ while 1
     elseif (strcmpi(dataKey,'assumed-boundary-layer'))
         wallDelta = str2double(fgetl(fileID));
     elseif (strcmpi(dataKey,'blood-viscosity'))
-        Nu = str2double(fgetl(fileID));
+        Mu = str2double(fgetl(fileID));
     elseif (strcmpi(dataKey,'blood-density'))
         rho = str2double(fgetl(fileID));
     elseif (strcmpi(dataKey,'root-radius'))
@@ -131,6 +135,12 @@ while 1
         errTol = str2double(fgetl(fileID));
     elseif (strcmpi(dataKey,'minimum-radius'))
         Rmin = str2double(fgetl(fileID));
+    elseif (strcmpi(dataKey,'zeta'))
+        zeta = str2double(fgetl(fileID));
+    elseif (strcmpi(dataKey,'gamma'))
+        gamma = str2double(fgetl(fileID));
+    elseif (strcmpi(dataKey,'length-to-radius-ratio'))
+        lrr = str2double(fgetl(fileID));
     elseif (strcmpi(dataKey,'END-OF-FILE'))
         break
     end
@@ -139,7 +149,7 @@ end
 %--------------------------------------------------------------------------
 % d. Get Mu from density and viscosity:
 %--------------------------------------------------------------------------
-Mu = Nu * rho;
+Nu = Mu/rho;
 
 %% Create Spatial and Temporal Discretisations:
 %-------------------------------------------------------------------------
@@ -203,8 +213,13 @@ Qold                = zeros(1, nnodes);
 
 %% Build a tree for the outlet:
 %--------------------------------------------------------------------------
+[alpha beta] = getAlphaBeta(gamma,zeta,lrr);
 flowTree = Tree(rootR);
-flowTree.BuildTree(Rmin,10,0.9,0.6);
+flowTree.BuildTree(Rmin,10,alpha,beta);
+
+
+alpha 
+beta
 
 if ( isShiftedImpedanceMethod == 0 )
     %%%% ---------------
@@ -219,7 +234,7 @@ if ( isShiftedImpedanceMethod == 0 )
     for i=1:length(k)
         indPlus = indexMap(k(i));
         if k(i) > 0
-            zTree_F(indPlus-1) = flowTree.CalculateImpedance(freqVec(indPlus),1,0,50);
+            zTree_F(indPlus-1) = flowTree.CalculateImpedance(freqVec(indPlus),1,0,lrr);
         end
     end
     

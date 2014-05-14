@@ -13,8 +13,8 @@ classdef Tree < handle
     %Define the member data of this structure
     properties
         R0        %Units(m)
-        Nodes = [0 0 0 0]
-        
+        Nodes = [0 0 0 0] 
+        Eh
     end
     %Define the functions of this structure
     methods
@@ -30,7 +30,7 @@ classdef Tree < handle
             end
         end
         
-        function BuildTree(obj,rmin,generations,alpha,beta)
+        function BuildTree(obj,rmin,generations,beta,alpha)
             if nargin > 0
                iterations = 2^generations;
        
@@ -59,9 +59,15 @@ classdef Tree < handle
                    if r2 < rmin
                        %disp('Terminal Branch');
                    else
-                       obj.Nodes(i,2) = x+2;
-                       obj.Nodes(x+2,3) = i;
-                       obj.Nodes(x+2,4) = r2;
+                       if r1 < rmin
+                           obj.Nodes(i,2) = x+1;
+                           obj.Nodes(x+1,3) = i;
+                           obj.Nodes(x+1,4) = r2;
+                       else
+                           obj.Nodes(i,2) = x+2;
+                           obj.Nodes(x+2,3) = i;
+                           obj.Nodes(x+2,4) = r2;
+                       end
                    end
                    if r2< rmin && r1< rmin
                        %disp('Both Branches are Terminal');
@@ -79,6 +85,10 @@ classdef Tree < handle
             if nargin > 0
                 %Define global variables
                 global Mu Nu rho            % physical properties of the fluid
+                global Elast wallH
+                global isMaterialExpSmall
+                global expModelK1 expModelK2 expModelK3
+      
                 
                 %This is a recursive function to find the total impedance
                 %of a tree. It is based on the impedance of the two child
@@ -88,15 +98,21 @@ classdef Tree < handle
                 %These are all the values needed by the Impedance
                 %computation
                 r = obj.Nodes(x,4);
-                %Eh is a function of root radius and some constants (Olufssen)
-                Eh = obj.R0*((2*10^7)*exp(-1*obj.R0*22.53)+8.65*10^5);
+          
                 %Root area
                 A = pi*(r)^2;
                 %Wormersley number
                 w0 = sqrt(((1i^3)*r^2*omega)/Nu);
                 Fj = (2*besselj(1,w0))/(w0*besselj(0,w0));
+                hold on;
                 %Compliance
-                C = (3*A*r)/(2*Eh);
+                if isMaterialExpSmall
+                    Eh = r*(expModelK1*exp(expModelK2*r)...
+                    + expModelK3);
+                    C = (3*A*r)/(2*Eh);
+                else
+                    C = (3*A*r)/(2*Elast*wallH);
+                end
                 %Wave speed
                 c = sqrt((A*(1-Fj))/(rho*C));
                 %Length of vessel
@@ -121,12 +137,12 @@ classdef Tree < handle
 
                         Ztotal = Zwtop/Zwbottom;
                     else
-                        Ztotal = (8*Mu*lratio)/(pi*obj.Nodes(x,4)^3)+ZL;
+                        Ztotal = (8*Mu*lratio)/(pi*r^3)+ZL;
                     end
                 %If one child is zero, make it terminal impedance
                 elseif (c1 ~= 0 && c2 == 0)
 
-                    Z1 = obj.CalculateImpedance(omega,obj.Nodes(x,1),Rterm,lratio);
+                    Z1 = obj.CalculateImpedance(omega,c1,Rterm,lratio);
                     Z2 = Rterm;
                     
                     ZL = 1/((1/Z1)+(1/Z2));
@@ -138,13 +154,13 @@ classdef Tree < handle
 
                         Ztotal = Zwtop/Zwbottom;
                     else
-                        Ztotal = (8*Mu*lratio)/(pi*obj.Nodes(x,4)^3)+ZL;
+                        Ztotal = (8*Mu*lratio)/(pi*r^3)+ZL;
                     end
                     
                 %If other child is zero, make it terminal impedance
                 elseif (c2 ~= 0 && c1 == 0)
                    
-                    Z2 = obj.CalculateImpedance(omega,obj.Nodes(x,2),Rterm,lratio);
+                    Z2 = obj.CalculateImpedance(omega,c2,Rterm,lratio);
                     Z1 = Rterm;
                     
                     ZL = 1/((1/Z1)+(1/Z2));
@@ -156,15 +172,15 @@ classdef Tree < handle
 
                         Ztotal = Zwtop/Zwbottom;
                     else
-                        Ztotal = (8*Mu*lratio)/(pi*obj.Nodes(x,4)^3)+ZL;
+                        Ztotal = (8*Mu*lratio)/(pi*r^3)+ZL;
                     end
                     
                 %Else if both children are not zero, calculate their
                 %impedances
                 else
 
-                    Z1 = obj.CalculateImpedance(omega,obj.Nodes(x,1),Rterm,lratio);
-                    Z2 = obj.CalculateImpedance(omega,obj.Nodes(x,2),Rterm,lratio);
+                    Z1 = obj.CalculateImpedance(omega,c1,Rterm,lratio);
+                    Z2 = obj.CalculateImpedance(omega,c2,Rterm,lratio);
                     
                     ZL = 1/((1/Z1)+(1/Z2));
                     
@@ -175,7 +191,7 @@ classdef Tree < handle
 
                         Ztotal = Zwtop/Zwbottom;
                     else
-                        Ztotal = (8*Mu*lratio)/(pi*obj.Nodes(x,4)^3)+ZL;
+                        Ztotal = (8*Mu*lratio)/(pi*r^3)+ZL;
                     end
                 end
             else
