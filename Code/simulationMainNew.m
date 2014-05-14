@@ -215,11 +215,7 @@ Qold                = zeros(1, nnodes);
 %--------------------------------------------------------------------------
 [alpha beta] = getAlphaBeta(gamma,zeta,lrr);
 flowTree = Tree(rootR);
-flowTree.BuildTree(Rmin,10,alpha,beta);
-
-
-alpha 
-beta
+flowTree.BuildTree(Rmin,10,0.5,0.5);
 
 if ( isShiftedImpedanceMethod == 0 )
     %%%% ---------------
