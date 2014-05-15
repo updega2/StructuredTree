@@ -14,17 +14,17 @@ global rho                   % physical property of the fluid
 global isMaterialExpModel    % choice variable for Olufsen's exponential material model
 global expModelK1 expModelK2 expModelK3
 
-P = getPressure(a_A,a_R0,a_P0);
-A0= pi*a_R0*a_R0;
-R = sqrt(a_A/pi);
+P   = getPressure(a_A,a_R0,a_P0);
+A0  = pi*a_R0*a_R0;
+R   = sqrt(a_A/pi);
 
 
 if ( isMaterialExpModel == 1 )
-    f = (4.0/3.0)*(expModelK1*exp(expModelK2*a_R0) + expModelK3);
-    dfdR0 = (4.0/3.0)*(expModelK1*expModelK2)*exp(expModelK2*a_R0);
+    f       = (4.0/3.0)*(expModelK1*exp(expModelK2*a_R0) + expModelK3);
+    dfdR0   = (4.0/3.0)*(expModelK1*expModelK2)*exp(expModelK2*a_R0);
 else
-    f = (4.0*Elast*wallH)/(3.0*a_R0);
-    dfdR0 = -(4.0*Elast*wallH)/(3.0*(a_R0*a_R0));
+    f       = (4.0*Elast*wallH)/(3.0*a_R0);
+    dfdR0   = -(4.0*Elast*wallH)/(3.0*(a_R0*a_R0));
 end
 
 term1 = dfdR0*((pi*a_R0*R-pi*a_R0*a_R0)/rho);

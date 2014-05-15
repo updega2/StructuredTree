@@ -9,7 +9,7 @@ function B = calculateB(a_A,a_R0,a_P0)
 % University of California, Berkeley.
 %--------------------------------------------------------------------------
 global Elast wallH              % mechanical properties of vessel wall
-global rho                    % physical property of the fluid
+global rho                      % physical property of the fluid
 global isMaterialExpModel
 global expModelK1 expModelK2 expModelK3
 

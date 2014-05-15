@@ -18,25 +18,32 @@
 global nnodes                   % number of spatial nodes
 global nsteps                   % number of time-steps
 global Tcard numPeriods         % the cardiac period being simulated
-global CardiacOut
-global CardiacPeak
+global CardiacOut               % total cardiac output
+global CardiacPeak              % instant in cardiac period when flow is maximum
 global X0 X1                    % starting and ending coordinate
-global Xvec
+global Xvec                     % vector of nodal coordinates
 global omega0 omega1            % range of frequencies
 global delK delH                % time-step size and mesh grid spacing
-global rootR isR0function       % properties of the geometry
+global rootR                    % properties of the geometry
 global Elast wallH wallDelta    % mechanical properties of vessel wall
-global P0
+global P0                       % external/operating pressure
 global Nu rho Mu                % physical properties of the fluid
-global Rtop Rbottom
-global errTol
+global Rtop Rbottom             % starting and ending radius of vessel
+global errTol                   % error tolerance for all the iterative solvers
 global Rmin                     % minimum tree radius
 global solA solQ                % arrays for storing solution
-global gamma zeta
-global lrr
-
-global alphaTree
-global betaTree
+global gamma                    % asymmetry ratio parameter for the structured tree
+global zeta                     % exponent for Murray's Law 
+global lrr                      % vessel length to radius ratio
+global alphaTree                % alpha for the asymmetric structured tree
+global betaTree                 % beta for the asymmetric structured tree
+global expModelK1 
+global expModelK2 
+global expModelK3
+global Rdistal                  % distal resistance parameter for windkessel models
+global Rproximal                % proximal resistance parameter for windkessel models
+global ComplianceTotal          % total arterial compliance for windkessel models
+global WindkesselType           % type of windkessel model based on number of elements
 
 %----------------------------------------------------
 % Each of these arrays are of size numtimesteps x 2.
@@ -50,24 +57,18 @@ global solA_m_n                 % array to store A_m^n
 global solQ_mm1_n               % array to store Q_{m-1}^n
 global solA_mm1_n               % array to store A_{m-1}^n
 
+%------------------------------------------------------
+% Various solver parameter selection settings
+% Should be set to 1 or 0 for Yes or No to the choices
+% these variables indicate
+%------------------------------------------------------
+global isR0function
 global isMatlabSolveFNonLin
 global isMethodCharacteristics
 global isCopyOlufsen
 global isMaterialExpModel
 global isShiftedImpedanceMethod
 global isMaterialExpSmall
-global expModelK1 expModelK2 expModelK3
-
-isMaterialExpSmall          = 0;
-isMaterialExpModel          = 0;
-isCopyOlufsen               = 0;
-isMatlabSolveFNonLin        = 1;
-isMethodCharacteristics     = 1;
-isShiftedImpedanceMethod    = 1;
-
-expModelK1 = 2.0*10^6;
-expModelK2 = -2253.0;
-expModelK3 = 8.65*10^4;
 
 Imat = [1.0,0.0;0.0,1.0];
 
@@ -91,56 +92,157 @@ end
 while 1
     dataKey = fgetl(fileID);
     if (strcmpi(dataKey,'number-of-spatial-nodes'))
+        
         nnodes = str2double(fgetl(fileID));
-        fprintf('nnodes is %i \n', nnodes)
+        
     elseif (strcmpi(dataKey,'number-of-temporal-nodes'))
+        
         nsteps = str2double(fgetl(fileID));
+        
     elseif (strcmpi(dataKey,'cardiac-period'))
+        
         Tcard = str2double(fgetl(fileID));
+        
     elseif ( strcmpi(dataKey,'number-of-periods') )
+        
         numPeriods = str2double(fgetl(fileID));
+        
     elseif ( strcmpi(dataKey,'total-cardiac-output') )
+        
         CardiacOut = str2double(fgetl(fileID));
+        
     elseif ( strcmpi(dataKey,'instant-of-peak-cardiac-output') )
+        
         CardiacPeak = str2double(fgetl(fileID));
+        
     elseif (strcmpi(dataKey,'domain-starting-point'))
+        
         X0 = str2double(fgetl(fileID));
+        
     elseif (strcmpi(dataKey,'domain-end-point'))
+        
         X1 = str2double(fgetl(fileID));
+        
     elseif (strcmpi(dataKey,'lower-frequency-value'))
+        
         omega0 = str2double(fgetl(fileID));
+        
     elseif (strcmpi(dataKey,'upper-frequency-value'))
+        
         omega1 = str2double(fgetl(fileID));
+        
     elseif (strcmpi(dataKey,'operating-pressure'))
+        
         P0 = str2double(fgetl(fileID));
+        
     elseif (strcmpi(dataKey,'artery-wall-elasticity'))
+        
         Elast = str2double(fgetl(fileID));
+        
     elseif (strcmpi(dataKey,'artery-wall-thickness'))
+        
         wallH = str2double(fgetl(fileID));
+        
+    elseif (strcmpi(dataKey,'exponential-material-model-k1'))
+        
+        expModelK1 = str2double(fgetl(fileID));
+        
+    elseif (strcmpi(dataKey,'exponential-material-model-k2'))
+        
+        expModelK2 = str2double(fgetl(fileID));
+        
+    elseif (strcmpi(dataKey,'exponential-material-model-k3'))
+        
+        expModelK3 = str2double(fgetl(fileID));
+        
     elseif (strcmpi(dataKey,'assumed-boundary-layer'))
+        
         wallDelta = str2double(fgetl(fileID));
+        
     elseif (strcmpi(dataKey,'blood-viscosity'))
+        
         Mu = str2double(fgetl(fileID));
+        
     elseif (strcmpi(dataKey,'blood-density'))
+        
         rho = str2double(fgetl(fileID));
+        
     elseif (strcmpi(dataKey,'root-radius'))
+        
         rootR = str2double(fgetl(fileID));
+        
     elseif (strcmpi(dataKey,'vessel-start-radius'))
+        
         Rtop = str2double(fgetl(fileID));
+        
     elseif (strcmpi(dataKey,'vessel-end-radius'))
+        
         Rbottom = str2double(fgetl(fileID));
+        
     elseif (strcmpi(dataKey,'initial-radius-is-a-function'))
+        
         isR0function = str2double(fgetl(fileID));
+        
     elseif (strcmpi(dataKey,'iterative-error-tolerance'))
+        
         errTol = str2double(fgetl(fileID));
+        
     elseif (strcmpi(dataKey,'minimum-radius'))
+        
         Rmin = str2double(fgetl(fileID));
+        
     elseif (strcmpi(dataKey,'zeta'))
+        
         zeta = str2double(fgetl(fileID));
+        
     elseif (strcmpi(dataKey,'gamma'))
+        
         gamma = str2double(fgetl(fileID));
+        
     elseif (strcmpi(dataKey,'length-to-radius-ratio'))
+        
         lrr = str2double(fgetl(fileID));
+        
+    elseif (strcmpi(dataKey,'Use-The-Material-Exponential-Model?'))
+        
+        isMaterialExpModel = str2double(fgetl(fileID));
+        
+    elseif (strcmpi(dataKey,'Use-The-Material-Exponential-Model-For-Tree?'))
+        
+        isMaterialExpSmall = str2double(fgetl(fileID));
+        
+    elseif (strcmpi(dataKey,'Use-All-Factors-And-Tweaks-From-Olufsen-Code?'))
+        
+        isCopyOlufsen = str2double(fgetl(fileID));
+        
+    elseif (strcmpi(dataKey,'Use-Matlab-Fsolve-For-Nonlinear-Solution?'))
+        
+        isMatlabSolveFNonLin = str2double(fgetl(fileID));
+        
+    elseif (strcmpi(dataKey,'Use-Method-Of-Characteristics-For-Outflow?'))
+        
+        isMethodCharacteristics = str2double(fgetl(fileID));
+        
+    elseif (strcmpi(dataKey,'Use-Shifted-Impedance-Calculation-From-Olufsen-Code?'))
+        
+        isShiftedImpedanceMethod = str2double(fgetl(fileID));
+        
+    elseif (strcmpi(dataKey,'Distal-Resistance-For-Windkessel-Models'))
+        
+        Rdistal = str2double(fgetl(fileID));
+        
+    elseif (strcmpi(dataKey, 'Proximal-Resistance-For-Windkessel-Models'))
+        
+        Rproximal = str2double(fgetl(fileID));
+        
+    elseif (strcmpi(dataKey, 'Total-Compliance-For-Windkessel-Models'))
+        
+        ComplianceTotal = str2double(fgetl(fileID));
+        
+    elseif (strcmpi(dataKey, 'Windkessel-Model-Type'))
+        
+        WindkesselType = str2double(fgetl(fileID));
+        
     elseif (strcmpi(dataKey,'END-OF-FILE'))
         break
     end
@@ -324,11 +426,11 @@ for periodCount = 1:numPeriods
     if ( periodCount == 1 )
         solQ(1,1) = getFlowRateIn(Tvec(1), CardiacOut, CardiacPeak, Tcard);
         
-        Resistance = 33330500;    
-        %Resistance = 3333; 
-        solQ(1,end) = getPressure(solA(1,end),R0(end),P0)/Resistance;
-        %solQ(1,end) = getPressure(solA(1,end),R0(end),P0)*yTree_T(1)*delK;
-        solQ(1,end);
+        if ( (WindkesselType == 1) )
+            solQ(1,end) = getPressure(solA(1,end),R0(end),P0)/Rdistal;
+        elseif ( WindkesselType == 0 )
+            %solQ(1,end) = getPressure(solA(1,end),R0(end),P0)*yTree_T(1)*delK;
+        end
     else
         %------------------------------------------------------------------
         % get the first time instant (T=0) for the N+1'th period to match
@@ -349,7 +451,6 @@ for periodCount = 1:numPeriods
    
         simTimeP = Tvec(timeCounter);
         simTime  = simTime + simTimeP;
-
 
         Aold = solA(timeCounter-1,:);
         Qold = solQ(timeCounter-1,:);
@@ -577,7 +678,7 @@ for periodCount = 1:numPeriods
                     (delK/2.0)*(S_Xp_Tp_half + S_Xm_Tp_half);
             end
             
-            % store this solution update into solA and solQ (CHECK IMPLEMENTATION)
+            % store this solution update into solA and solQ
             
             Avec(x) = U_X_Tp1(1);
             
@@ -598,8 +699,11 @@ for periodCount = 1:numPeriods
         %plot(linspace(1,nnodes,nnodes),Qvec);
         nPeriod = timeCounter;
         if ( isMethodCharacteristics == 1 )
-            %[A,Q] = characteristicOutflow(nPeriod,yTree_T);
-            [A,Q] = characteristicResistance(nPeriod);
+            if ( WindkesselType == 0 )
+                %[A,Q] = characteristicOutflow(nPeriod,yTree_T);
+            elseif ( WindkesselType == 1 )
+                [A,Q] = characteristicResistance(nPeriod);
+            end
             Qvec(nnodes) = Q;
             Avec(nnodes) = A;
             Qvec;
@@ -614,88 +718,92 @@ for periodCount = 1:numPeriods
             solA_mm1_n(timeCounter,2)       = Avec(nnodes-1);
             solQ_mm1_n(timeCounter,2)       = Qvec(nnodes-1);
         else
-            % d.2. create the vector for iterative solution guess:
-            %-----------------------------------------------------
-            Q_m_n   = Qold(end);
-            A_m_n   = Aold(end);
-            Q_mm1_n = Qold(end-1);
-            A_mm1_n = Aold(end-1);
-            if ( isR0function )
-                R0_m_n      = getR0function(Xvec(end),...
-                    Rtop, Rbottom, LenVessel);
-                dR0dX_m_n   = diffR0function(Xvec(end),...
-                    Rtop, Rbottom, LenVessel);
+            if ( WindkesselType ~= 0 )
+                fprintf('Code for windkessel non-linear flow not available\n');
             else
-                R0_m_n = getR0data(Xvec(end));
-            end
-            if ( isR0function )
-                R0_mm1_n    = getR0function(Xvec(end-1),...
-                    Rtop, Rbottom, LenVessel);
-                dR0dX_mm1_n = diffR0function(Xvec(end-1),...
-                    Rtop, Rbottom, LenVessel);
-            else
-                R0_mm1_n = getR0data(Xvec(end-1));
-            end
-            
-            R_m_n   = getFluxVector(A_m_n, Q_m_n, R0_m_n, P0);
-            S_m_n   = getSourceVector(A_m_n, Q_m_n, R0_m_n, dR0dX_m_n, P0);
-            R1_m_n  = R_m_n(1);
-            R2_m_n  = R_m_n(2);
-            S1_m_n  = S_m_n(1);
-            S2_m_n  = S_m_n(2);
-            R_mm1_n = getFluxVector(A_mm1_n, Q_mm1_n,R0_mm1_n, P0);
-            S_mm1_n = getSourceVector(A_mm1_n, Q_mm1_n, R0_mm1_n, dR0dX_mm1_n, P0);
-            R1_mm1_n = R_mm1_n(1);
-            R2_mm1_n = R_mm1_n(2);
-            S1_mm1_n = S_mm1_n(1);
-            S2_mm1_n = S_mm1_n(2);
-            Q_mm_np_half = 0.5*(Q_m_n + Q_mm1_n) - ...
-                (delK/(2*delH))*(R2_m_n - R2_mm1_n) + ...
-                (delK/4)*(S2_m_n + S2_mm1_n);
-            A_mm_np_half = 0.5*(A_m_n + A_mm1_n) - ...
-                (delK/(2*delH))*(R1_m_n - R1_mm1_n) + ...
-                (delK/4)*(S1_m_n + S1_mm1_n);
-            %xIter0  = [Q_m_n, A_m_n, Q_mm_np_half, A_mm_np_half]';
-            xIter0  = [Q_mm_np_half, A_mm_np_half, Q_m_n, A_m_n]';
-            fX      = [0, 0, 0, 0]';
-            xIter   = xIter0;
-            
-            errIter = 10*errTol;
-            if ( isMatlabSolveFNonLin == 1 )
-                f1 = @(x) getNonLinearEq1(x, nPeriod, yTree_T);
-                f2 = @(x) getNonLinearEq2(x, nPeriod, yTree_T);
-                f3 = @(x) getNonLinearEq3(x, nPeriod, yTree_T);
-                f4 = @(x) getNonLinearEq4(x, nPeriod, yTree_T);
-                options = optimset('Display','off');
-                [xNew, fVal] = fsolve(@(x)[f1(x), f2(x), f3(x), f4(x)], xIter0,options);
-                fVal;
-            else
-                while (errIter > errTol)
-                    fX(1)   = getNonLinearEq1(xIter, nPeriod, yTree_T);
-                    fX(2)   = getNonLinearEq2(xIter, nPeriod, yTree_T);
-                    fX(3)   = getNonLinearEq3(xIter, nPeriod, yTree_T);
-                    fX(4)   = getNonLinearEq4(xIter, nPeriod, yTree_T);
-                    Df      = getJacobianX(xIter, nPeriod, yTree_T);
-                    xNew    = xIter - Df\fX;
-                    errIter = norm(xNew - xIter,2)/norm(xNew - xIter0);
-                    xIter   = xNew;
+                % d.2. create the vector for iterative solution guess:
+                %-----------------------------------------------------
+                Q_m_n   = Qold(end);
+                A_m_n   = Aold(end);
+                Q_mm1_n = Qold(end-1);
+                A_mm1_n = Aold(end-1);
+                if ( isR0function )
+                    R0_m_n      = getR0function(Xvec(end),...
+                        Rtop, Rbottom, LenVessel);
+                    dR0dX_m_n   = diffR0function(Xvec(end),...
+                        Rtop, Rbottom, LenVessel);
+                else
+                    R0_m_n = getR0data(Xvec(end));
                 end
-            end
-            % d.4. use the converged solution to update outlet values:
-            %---------------------------------------------------------
-            Qvec(end) = xIter(3);
-            Avec(end) = xIter(4);
-            % e. update all nodal solution values in the global solution arrays
-            %------------------------------------------------------------------
-            solA(timeCounter,:) = Avec(:);
-            solQ(timeCounter,:) = Qvec(:);
+                if ( isR0function )
+                    R0_mm1_n    = getR0function(Xvec(end-1),...
+                        Rtop, Rbottom, LenVessel);
+                    dR0dX_mm1_n = diffR0function(Xvec(end-1),...
+                        Rtop, Rbottom, LenVessel);
+                else
+                    R0_mm1_n = getR0data(Xvec(end-1));
+                end
             
-            solA_m_n(timeCounter,2)         = Avec(end);
-            solQ_m_n(timeCounter,2)         = Qvec(end);
-            solA_mm1_n(timeCounter,2)       = Avec(end-1);
-            solQ_mm1_n(timeCounter,2)       = Qvec(end-1);
-            solA_mp_np_half(timeCounter,2)  = xIter(2);
-            solQ_mp_np_half(timeCounter,2)  = xIter(1);
+                R_m_n   = getFluxVector(A_m_n, Q_m_n, R0_m_n, P0);
+                S_m_n   = getSourceVector(A_m_n, Q_m_n, R0_m_n, dR0dX_m_n, P0);
+                R1_m_n  = R_m_n(1);
+                R2_m_n  = R_m_n(2);
+                S1_m_n  = S_m_n(1);
+                S2_m_n  = S_m_n(2);
+                R_mm1_n = getFluxVector(A_mm1_n, Q_mm1_n,R0_mm1_n, P0);
+                S_mm1_n = getSourceVector(A_mm1_n, Q_mm1_n, R0_mm1_n, dR0dX_mm1_n, P0);
+                R1_mm1_n = R_mm1_n(1);
+                R2_mm1_n = R_mm1_n(2);
+                S1_mm1_n = S_mm1_n(1);
+                S2_mm1_n = S_mm1_n(2);
+                Q_mm_np_half = 0.5*(Q_m_n + Q_mm1_n) - ...
+                    (delK/(2*delH))*(R2_m_n - R2_mm1_n) + ...
+                    (delK/4)*(S2_m_n + S2_mm1_n);
+                A_mm_np_half = 0.5*(A_m_n + A_mm1_n) - ...
+                    (delK/(2*delH))*(R1_m_n - R1_mm1_n) + ...
+                    (delK/4)*(S1_m_n + S1_mm1_n);
+                %xIter0  = [Q_m_n, A_m_n, Q_mm_np_half, A_mm_np_half]';
+                xIter0  = [Q_mm_np_half, A_mm_np_half, Q_m_n, A_m_n]';
+                fX      = [0, 0, 0, 0]';
+                xIter   = xIter0;
+            
+                errIter = 10*errTol;
+                if ( isMatlabSolveFNonLin == 1 )
+                    f1 = @(x) getNonLinearEq1(x, nPeriod, yTree_T);
+                    f2 = @(x) getNonLinearEq2(x, nPeriod, yTree_T);
+                    f3 = @(x) getNonLinearEq3(x, nPeriod, yTree_T);
+                    f4 = @(x) getNonLinearEq4(x, nPeriod, yTree_T);
+                    options = optimset('Display','off');
+                    [xNew, fVal] = fsolve(@(x)[f1(x), f2(x), f3(x), f4(x)], xIter0,options);
+                    fVal;
+                else
+                    while (errIter > errTol)
+                        fX(1)   = getNonLinearEq1(xIter, nPeriod, yTree_T);
+                        fX(2)   = getNonLinearEq2(xIter, nPeriod, yTree_T);
+                        fX(3)   = getNonLinearEq3(xIter, nPeriod, yTree_T);
+                        fX(4)   = getNonLinearEq4(xIter, nPeriod, yTree_T);
+                        Df      = getJacobianX(xIter, nPeriod, yTree_T);
+                        xNew    = xIter - Df\fX;
+                        errIter = norm(xNew - xIter,2)/norm(xNew - xIter0);
+                        xIter   = xNew;
+                    end
+                end
+                % d.4. use the converged solution to update outlet values:
+                %---------------------------------------------------------
+                Qvec(end) = xIter(3);
+                Avec(end) = xIter(4);
+                % e. update all nodal solution values in the global solution arrays
+                %------------------------------------------------------------------
+                solA(timeCounter,:) = Avec(:);
+                solQ(timeCounter,:) = Qvec(:);
+            
+                solA_m_n(timeCounter,2)         = Avec(end);
+                solQ_m_n(timeCounter,2)         = Qvec(end);
+                solA_mm1_n(timeCounter,2)       = Avec(end-1);
+                solQ_mm1_n(timeCounter,2)       = Qvec(end-1);
+                solA_mp_np_half(timeCounter,2)  = xIter(2);
+                solQ_mp_np_half(timeCounter,2)  = xIter(1);
+            end
         end
         
         kcfl = checkCFL(solA(timeCounter,:),solQ(timeCounter,:));
@@ -709,15 +817,9 @@ for periodCount = 1:numPeriods
     outFileQ    = strcat('Qdata',num2str(periodCount));
     outFileQ    = strcat(outFileQ, '.dat');
     dlmwrite(outFileQ,solQ);
-%     outID       = fopen(outFileQ,'w');
-%     fwrite(outID,solQ,'double');
-%     fclose(outID);
 
     outFileA    = strcat('Adata',num2str(periodCount));
     outFileA    = strcat(outFileA, '.dat');
     dlmwrite(outFileA,solA);
-%     outID       = fopen(outFileA,'w');
-%     fwrite(outID,solA,'double');
-%     fclose(outID);
     
 end
