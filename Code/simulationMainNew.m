@@ -59,7 +59,7 @@ global isMaterialExpSmall
 global expModelK1 expModelK2 expModelK3
 
 isMaterialExpSmall          = 0;
-isMaterialExpModel          = 1;
+isMaterialExpModel          = 0;
 isCopyOlufsen               = 0;
 isMatlabSolveFNonLin        = 1;
 isMethodCharacteristics     = 1;
