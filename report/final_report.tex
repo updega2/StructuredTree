@@ -43,6 +43,8 @@ We will then describe the process taken in implementing this code along with som
 
 \section{Theory}
 
+\subsection{Why Structured Tree}
+
 Modeling the human body, in the current state of being, is a complex and difficult process. Large 3D models that account for large portions of the human vasculature take immense amounts of computation time to solve for the flow within the body~\cite{someone}. On the other hand, smaller models that take into account the rest of the body as a set resistance or circuit (lumped parameter models) cannot accurately resolve the physiological wave reflections in the human vasculature~\cite{someone}. The Structured Tree One-D model lies somewhere in between the two complexities. It is a One-D model, so computational time is significantly decreases; in addition, the wave reflections of the human vasculature are captured because the impedance of the human body is modeled as an impedance based on frequency of the downstream vessels (The Structured Tree). %It is important to note that the formation of this tree, specifically the cut-off radius for the downstream vessels, is quite important for the solution. The effect of this cut-off radius is investigated later in the paper.
 
 As is commonly the case, blood is modeled as an incompressible, non-newtonian fluid. The navier-stokes equation of motion are therefore applied to the fluid. Starting with a simplified version of continuity, we get Equation~\eqref{continuity}, and the simplified conservation of momentum in the x direction we get Equation~\eqref{consxmomentum}.
@@ -87,13 +89,48 @@ p(x,t) = \frac{1}{T} \int_{-T/2}^{T/2} z(x,t-\tau) q(x,\tau) d\tau
 
 The Inverse Fourier Transform of the impedance is taken in order to get the impedances as a function of time. These impedances are then used to couple the outflow condition to the solution by either using another Lax-Wendroff discretization or a method of Positive Characteristics. Because the method of Positive Characteristics is simpler and easier to explain, it will be described below. 
 
+\subsection{Structured Tree}
+Our implementation of the structured tree actually varies slightly from Olufsen's implementation. In her code, Olufsen runs through each vessel individually and calculates the radius of the vessel based on Equation~\eqref{radius}. She retains no structure of the vessels within the tree and recalculates all this information for each structured tree.
+
+\begin{equation}
+	\label{radius}
+	(r_0)_(n,k) = R_{root} \alpha^k\beta^{n-k}
+\end{equation}
+
+where $\alpha$ and $\beta$ are constants that describe the reduction and asymmetry of the vascular tree. $n$ is the number of total generations of the tree and $k$ is the current generation. She the calculates the corresponding impedance in the same recursive step and returns the total tree impedance at each corresponding frequency. 
+
+Our algorithm, however, is based off of a class that we have defined in order to retain information about the tree. We iterate through each generation of the tree and develop two daughters from each branch by applying $\alpha$ and $\beta$ separately to each member. In the end, we have an array that describes the breakdown of this entire tree with the following format:
+
+\begin{equation}
+	\begin{bmatrix}
+		Daughter \: 1 \; & Daughter \: 2 \; & Parent \; & Radius 
+	\end{bmatrix}
+\end{equation}
+
 \section{Methods}
 \subsection{Our Implementation}
-For future ease of use, Matlab was used as the coding interface. This will allow
+For future ease of use, Matlab was used as the coding interface. This will allow future students and lab members to easily use the code and either experiment or make modifications to the code. 
 
 \subsection{Olufsen Implementation}
+As you know, we were able to get in touch with Olufsen, and she generously sent us her code via e-mail. We were able to compile, run, and post process her code. Because our code is not to the point where we can investigate some of the things we were hoping to, we modified her code in certain ways to display some interesting things. We investigated the following things:
+
+\begin{itemize}
+	\item
+		Effect of decreasing the cardiac period
+	\item
+		Blocking flow in certain arteries (carotid)
+	\item
+		Imposing a root impedance in certain arteries
+\end{itemize}
+
+We were able to see from these...
+
+\section{Results}
 
 \section{Conclusion and Discussion}
+We have learned an immense amount from this exercise, both from a development point of view and a cardiovascular biomechanics view. We now understand some complications that may arise when attempting to imitate another person's work. We made the decision to go ahead and use the schemes that Olufsen was using assuming they were consistent, well document, and working. This may not always be the case, and looking back, we realize it may have been a lot simpler and easier to bug/write our code had we developed our own discretization scheme or method. 
+
+Also talk about what we learn from Olufsen's code
 
 \bibliographystyle{plain}
 \bibliography{report}
