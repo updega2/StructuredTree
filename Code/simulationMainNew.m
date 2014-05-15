@@ -183,7 +183,7 @@ end
 
 %% Fix a chosen value for flow-rate to initialize (let it be 1 for now):
 %--------------------------------------------------------------------------
-Qstart = 1*10^-6;
+Qstart = 1.0*10^-6;
 
 %% Initialize the solution vectors:
 %--------------------------------------------------------------------------
@@ -703,5 +703,21 @@ for periodCount = 1:numPeriods
         %hold on;
         %plot(linspace(1,nnodes,nnodes),A0,'r')
     end
+    
+    % Write the data to a file:
+    %--------------------------
+    outFileQ    = strcat('Qdata',num2str(periodCount));
+    outFileQ    = strcat(outFileQ, '.dat');
+    dlmwrite(outFileQ,solQ);
+%     outID       = fopen(outFileQ,'w');
+%     fwrite(outID,solQ,'double');
+%     fclose(outID);
+
+    outFileA    = strcat('Adata',num2str(periodCount));
+    outFileA    = strcat(outFileA, '.dat');
+    dlmwrite(outFileA,solA);
+%     outID       = fopen(outFileA,'w');
+%     fwrite(outID,solA,'double');
+%     fclose(outID);
     
 end
