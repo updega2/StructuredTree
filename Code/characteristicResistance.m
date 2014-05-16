@@ -33,6 +33,7 @@ global isCopyOlufsen
 global isMatlabNonLinSolve 
 global isMaterialExpModel
 global expModelK1 expModelK2 expModelK3
+global Rdistal
 
 % Calculate R0 and dR0dX:
 %------------------------
@@ -115,16 +116,14 @@ coeff_C3    = 2.0*pi*Nu*Q_R*R_end/wallDelta;
 speedC0     = sqrt(f/(2.0*rho));
 
 
-H_R_plus    = -((coeff_C1*A_R + coeff_C2*sqrt(A_R))/rho) + (coeff_C3/A_R);
-H_R_plus    = H_R_plus/(-((Q_R/A_R) + C_R));
+H_R_plus    = ((coeff_C1*A_R + coeff_C2*sqrt(A_R))/rho) + (coeff_C3/A_R);
+H_R_plus    = H_R_plus/(-(-(Q_R/A_R) + C_R));
 
 denomTerm = -(Q_R/A_R) + C_R;
 
-Resistance = 33330500;   
-%Resistance = 3333;
 isFsolve = 0;
 if isFsolve
-    nlEqAQ = @(x)x + (getPressure(x,R0,P0)/(Resistance*denomTerm)) - A_R...
+    nlEqAQ = @(x)x + (getPressure(x,R0,P0)/(Rdistal*denomTerm)) - A_R...
         - (Q_R/denomTerm) - (H_R_plus*delK);
     
     AQ0 = A_T;
@@ -133,22 +132,20 @@ if isFsolve
     A   = A_Q;
 else
     maxIter = 30;
-    tol = 1e-4;
-    eIter = 2*tol;
-    A_Q = A_T;
+    tol     = 1e-4;
+    eIter   = 2*tol;
+    Aold    = A_T;
     numIter = 0;
     while eIter > tol && numIter < maxIter
-        A = -(getPressure(A_Q,R0,P0)/(Resistance*denomTerm)) + A_R...
+        Anew = -(getPressure(Aold,R0,P0)/(Rdistal*denomTerm)) + A_R...
             + (Q_R/denomTerm) + (H_R_plus*delK);
-        eIter = (abs(A - A_Q))/(abs(A - A_T));
-        A_Q = A;
+        eIter = (abs(Anew - Aold))/(abs(Anew - A_T));
+        Aold = Anew;
         numIter = numIter +1;
     end
+    A_Q = Anew;
 end
         
-    
-
-
 % Calculate Q_Q:
 %---------------
 

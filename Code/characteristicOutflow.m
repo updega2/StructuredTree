@@ -114,8 +114,8 @@ coeff_C3    = 2.0*pi*Nu*Q_R*R_end/wallDelta;
 speedC0     = sqrt(f/(2.0*rho));
 
 
-H_R_plus    = -((coeff_C1*A_R + coeff_C2*sqrt(A_R))/rho) + (coeff_C3/A_R);
-H_R_plus    = H_R_plus/(-((Q_R/A_R) + C_R));
+H_R_plus    = ((coeff_C1*A_R + coeff_C2*sqrt(A_R))/rho) + (coeff_C3/A_R);
+H_R_plus    = H_R_plus/(-(-(Q_R/A_R) + C_R));
 
 % Calculate Q_tms:
 %-----------------
