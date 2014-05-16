@@ -49,17 +49,17 @@
 \begin{document}
 \maketitle
 \section{Introduction}
-Using the paper reviewed in Journal Club, we attempted to implement the Structured Tree Outflow conditions for a 1-D Vascular Model presented by Olufsen~\cite{structuredtree}. The 1-D model presented by Olufsen outlines a finite difference scheme for solving the Navier-Stokes equations; as such, we used this approach for implementation of our 1-D model. We will briefly outline the purpose of using a Structured Tree model and the theory behind this implementation.%as well as potential points of error in the discretization.
-We will then describe the process taken in implementing this code along with some issues encountered along the way. We will discuss the current state of our code as well as display some preliminary results of our implementation. Lastly, we will talk about a small study investigated using Olufsen's code. 
+Using the paper reviewed in Journal Club, we attempted to implement a 1-D solver for blood flow in arteries using a coupled Structure Tree outflow boundary condition presented by Olufsen~\cite{structuredtree}. Olufsen outlines a finite difference scheme for solving the Navier-Stokes equations; as such, we used this approach for implementation of our 1-D model. We will briefly outline the motivation behind using a Structured Tree model and the theory behind this implementation.%as well as potential points of error in the discretization.
+We will then describe the implementation procedure for this  code along with some issues encountered along the way. We will discuss the current state of our code development as well as present some preliminary results of our implementation. Lastly, we report on a case study investigated using Olufsen's version of the 1-D code. 
 
 \section{Theory}
 
-\subsection{Why Structured Tree}
+\subsection{Why Structured Tree?}
 
-Modeling the human body, in the current state of being, is a complex and difficult process. Large 3-D models that account for large portions of the human vasculature take immense amounts of computation time to solve for the flow within the body. On the other hand, smaller models that take into account the rest of the body as a set resistance or circuit (lumped parameter models) cannot accurately resolve the physiological wave reflections in the human vasculature~\cite{structuredtree}. The Structured Tree 1-D model lies somewhere in between the two complexities. It is a 1-D model, so computational time is significantly decreases; in addition, the wave reflections of the human vasculature are captured because the impedance of the human body is modeled as an impedance based on frequency of the downstream vessels (The Structured Tree). It is important to note that the formation of this tree, specifically the root impedance, can have an effect on the solution. The effect of  a change in root impedance is investigated later in the paper.
+Modeling the human circulation, in the current state of the art, is a complex and difficult process. Fully resolved 3-D models that account for complex geometries of the human vasculature provide detailed information on flow features, but require immense amounts of computation time. On the other hand, smaller models which treat the vascular pathway as a combination of lumped parameters based on analogous electrical circuit elements cannot accurately resolve the physiological wave reflections in the human vasculature~\cite{structuredtree}. The Structured Tree 1-D model lies somewhere in between the two complexities. It is a 1-D model, so computational time is significantly reduced; in addition, the wave reflections of the human vasculature are captured because the impedance of the human body is modeled as an impedance based on frequency of the downstream vessels. It is important to note that the formation of this tree, specifically the root impedance and asymmetry in branching, can have an effect on the solution. The effect of  a change in root impedance is investigated later in the paper.
 
 \subsection{Interior}
-As is commonly the case, blood is modeled as an incompressible, newtonian fluid. The navier-stokes equation of motion are therefore applied to the fluid. Starting with a simplified version of continuity, we get Equation~\eqref{continuity}, and the simplified conservation of momentum in the x direction we get Equation~\eqref{consxmomentum}.
+As is commonly the case, blood is modeled as an incompressible, Newtonian fluid - and the blood flow is described using the Navier Stokes equations. By representing the arteries using cylindrical tubes, and perfoming cross-sectional averages of the continuity and the Navier-Stokes equations, we get Equation~\eqref{continuity} and Equation~\eqref{consxmomentum}.
 
 \begin{equation}
 	\label{continuity}
@@ -71,32 +71,25 @@ As is commonly the case, blood is modeled as an incompressible, newtonian fluid.
 	\partder{q}{t} + \partder{}{x}\Bigg(\frac{q^2}{A}\Bigg) + \frac{A}{p}\partder{p}{x} = -\frac{2R\pi \nu q}{\delta A}
 \end{equation}
 
-For implementation of these non-linear equations, a Two-Step Lax-Wendroff (Richtmyer) scheme is used. Equations~\ref{continuity} and \ref{consxmomentum} can be written in the following form:
+For implementation of these non-linear equations, a two-step Lax-Wendroff (Richtmyer) scheme is used. Equations~\ref{continuity} and \ref{consxmomentum} can be written in the following form:
 
 \begin{equation} 
 	\label{discrete1}
-	\partder{}{t} \tensor{U} + \partder{}{x} \tensor{R}(\tensor{U}) = \tensor{S}
+	\partder{}{t} \tensor{U} + \partder{}{x} \tensor{R}(\tensor{U}) = \tensor{S(\tensor{U})}
 \end{equation}
 
-This equation is than discretized into the two equations two be solved over the interior domain. 
+This is now a hyperbolic set of equations. This can be discretized into the two equations two be solved over the interior domain. 
 
-\begin{enumerate}
-	\item
-	\begin{equation}
-		\label{bigu1}
-		\tensplus{U}{j}{T+1} = \tensplus{U}{j}{T} - \frac{k}{h} \Bigg(\tensplus{R}{j+1/2}{T+1/2} - \tensplus{R}{j-1/2}{T+1/2} \Bigg) + \frac{k}{2} \Bigg(\tensplus{S}{j		+1/2}{T+1/2} + \tensplus{S}{j-1/2}{T+1/2} \Bigg)
-	\end{equation}
-	
-	\item
-	\begin{equation}
+\begin{align}
+		\tensplus{U}{j}{T+1} &= \tensplus{U}{j}{T} - \frac{k}{h} \Bigg(\tensplus{R}{j+1/2}{T+1/2} - \tensplus{R}{j-1/2}{T+1/2} \Bigg) + \frac{k}{2} \Bigg(\tensplus{S}{j		+1/2}{T+1/2} + \tensplus{S}{j-1/2}{T+1/2} \Bigg)   \label{bigu1}\\	
+		\tensplus{U}{j}{T+1/2} &= \frac{\tensplus{U}{j+1/2}{T} + \tensplus{U}{j-1/2}{T}}{2} + \frac{k}{2h} \Bigg(-\tensplus{R}{j+1/2}{T} - \tensplus{R}{j-1/2}{T} \Bigg)  		+ \frac{k}{4} \Bigg(\tensplus{S}{j+1/2}{T} + \tensplus{S}{j-1/2}{T} \Bigg)
 		\label{bigu2}
-		\tensplus{U}{j}{T+1/2} = \frac{\tensplus{U}{j+1/2}{T} + \tensplus{U}{j-1/2}{T}}{2} + \frac{k}{2h} \Bigg(-\tensplus{R}{j+1/2}{T} - \tensplus{R}{j-1/2}{T} \Bigg)  		+ \frac{k}{4} \Bigg(\tensplus{S}{j+1/2}{T} + \tensplus{S}{j-1/2}{T} \Bigg)
-	\end{equation}
-\end{enumerate}
+\end{align}
 
-In terms of implementing the equation, the very broad algorithm can be viewed to help describe the process:
+where $k$ is $\Delta x$ and $h$ is $\Delta t$. is In terms of implementing the equation, the very broad algorithm ~\ref{lag} demonstrates the implementation of the 1-D code. 
 
 \begin{algorithm}
+\label{alg}
 \caption{Implementation}\label{euclid}
 \begin{algorithmic}[1]
 \State Set up problem based on user input.
@@ -118,15 +111,13 @@ In terms of implementing the equation, the very broad algorithm can be viewed to
 \end{algorithmic}
 \end{algorithm}
 
-\subsection{Inflow}
+\subsection{Inflow Boundary Condition}
 
-For the inflow into the 1-D model, a mathematical model fit to measured data was used to represent the pulses of the human cardiac cycle. This mathematical model is described in Olufsen's thesis~\cite{olufsenthesis}.This is imposed as an initial condition in the first cardiac period. The following plot is produced to describe the velocity for the inlet.
-
-\pagebreak
+For the inflow into the 1-D model, a mathematical model fit to measured data was used to represent the pulses of the human cardiac cycle. This mathematical model is described in Olufsen's thesis~\cite{olufsenthesis}.This is imposed as an initial condition in the first cardiac period. The form of this inflow profile has been illustrated in Figure \ref{inflower}.
 
 \begin{figure}[ht]
 	\centering
-	\includegraphics{inflow}
+	\includegraphics[width=3in]{inflow}
 	\label{inflower}
 	\caption{The inflow profile from measured data in $m^3/s$. The curve is measured at the upper ascending aorta using magnetic resonance.}
 \end{figure}
@@ -142,7 +133,7 @@ Our implementation of the structured tree actually varies slightly from Olufsen'
 
 $\alpha$ and $\beta$ are constants that describe the reduction and asymmetry of the vascular tree. $n$ is the number of total generations of the tree and $k$ is the current generation. She then calculates the corresponding impedance in the same recursive step and returns the total tree impedance at each corresponding frequency. 
 
-Our algorithm, however, is based off of a class that we have defined in order to retain information about the tree. We iterate through each generation of the tree and develop two daughters from each branch by applying $\alpha$ and $\beta$ separately to each member. In the end, we have an array that describes the breakdown of this entire tree with the format following the structure of ~\eqref{nodes} below. We then calculate the impedance recursively based on this tree.
+Our algorithm, however, is based off of a class that we have defined in order to retain information about the tree. This is object oriented and hence amenable to better software development. In our implementation, we iterate through each generation of the tree and develop two daughters from each branch by applying $\alpha$ and $\beta$ separately to each member. In the end, we have an array that describes the breakdown of this entire tree with the format following the structure of ~\eqref{nodes} below. We then calculate the impedance recursively based on this tree.
 
 \begin{equation}
 	\label{nodes}
@@ -151,14 +142,13 @@ Our algorithm, however, is based off of a class that we have defined in order to
 	\end{bmatrix}
 \end{equation}
 
-From this vascular tree, the impedance based on an array of frequencies is computed. The Inverse Fourier Transform of the impedance is then taken in order to get the impedances as a function of time. These impedances are used to couple the outflow condition to the solution by either using another Lax-Wendroff discretization or a method of Positive Characteristics. This was actually something that is extremely different between Olufsen's thesis and her code, and actually became a big turning point in getting our code working. In her thesis, she states that a Lax-Wendroff method must also be used at the outflow in order to guarantee $2^{nd}$ order accuracy; however, she doesn't use this method and instead uses a method of positive characteristics. We implemented the method of positive characteristics as an alternative to the Lax-Wendroff discretization to provide an alternate, more reduced approach.
-
-\begin{figure}[ht]
-	\centering
+\begin{wrapfigure}{l}{0.5\textwidth}
 	\label{characteristicplot}
-	\includegraphics[width=3.5in]{characterplot}
-	\caption{At the right boundary, or the outlet, the source vector $\tensor{S}$, and the $\tensor{R}$ converge at point $Q$ using the method of positive characteristics.~\cite{olufsenthesis}}
-\end{figure}
+	\includegraphics[width=3in]{characterplot}
+	\caption{At the right boundary, or the outlet, we let the positive characteristic $\Gamma_+$  flow out to obtain the solution update at point $Q$.~\cite{olufsenthesis}}
+\end{wrapfigure}
+
+From this vascular tree, the impedance based on an array of frequencies is computed. The inverse Fourier transform of the impedance is then taken in order to get the impedances as a function of time. These impedances are used to couple the outflow condition to the solution by either using the original Lax-Wendroff discretization scheme with a ghost-node at the outflow boundary, or using the outflow of the positive characteristic of the hyperbolic system defined in Equation ~\eqref{discrete1} . This was actually significantly different between Olufsen's thesis and her code, and actually became a turning point in getting our code working. In her thesis, she states that a Lax-Wendroff method must also be used at the outflow in order to guarantee $2^{nd}$ order accuracy; however, she doesn't use this method and instead uses a method of positive characteristics. We implemented the method of positive characteristics as an alternative to the Lax-Wendroff discretization to provide an alternate, more reduced approach.
 
  \begin{equation}
  	\label{characteristics}
@@ -166,7 +156,7 @@ From this vascular tree, the impedance based on an array of frequencies is compu
 \end{equation}
 
 \section{Methods and Results}
-\subsection{Our Implementation}
+\subsection{Status of Our Implementation}
 For future ease of use, Matlab was used as the coding interface. This will allow future students and lab members to easily use the code and either experiment or make modifications to the code. The only down side to this is the fact that the code runs much slower than if it were implemented in fortran or c. The drastic effect of computation time is seen by the mere seconds it takes for Olufsen's code to finish compared to the ten minutes or so it takes for the Matlab implementation. With our code, we are at a point where the code runs, but only for problems of very carefully specified parameters. In addition, for debugging purposes, we set up the code to be able to use a resistance boundary condition to try to isolate whether the problem was in the interior of the domain or while implementing the boundary conditions. This helped to figure out separate issues in the code, as there seemed to be problems with both. The code now works for certain test cases using a resistance boundary condition, but \textit{interesting} things are happening for other problems.\\
 
  The following problem is run on a tube with a length of 100 cm and a radius of 1 cm. This case was run in order to try to compare with a test case run in Olufsen's paper. Olufsen runs a test case using a resistance boundary condition on a tube of equal length, but with decreasing radius. Her radius starts at 0.4 cm and decreases to 0.25 cm. The reason we have not run this exact test size is because the code cannot seem to handle the change in radius at this point. The profiles, however, look fairly similar and can be compared. The pressure profiles compared are with a resistance boundary condition, and the flow profiles displayed are with the structured tree outflow condition. We believe the reason the magnitude of the flow rate plot is off is because she used a different flow rate than the one we used. She doesn't specify what she has used as the inlet profile to this cylinder, so we assumed that she used the profile described for the entire vascular tree. This is probably not the case, and is most likely causing the discrepancies here. The comparison of the profiles of both flow and pressure are shown below:
@@ -175,7 +165,7 @@ For future ease of use, Matlab was used as the coding interface. This will allow
 	\centering
 	\includegraphics[width=6in]{pplot}
 	\label{ours}
-	\caption{Surface plot of the pressure along the tube with resistance boundary condition for one cardiac period. \textbf{Left:} Plot from Olufsen's thesis during fourth cardiac cycle. \textbf{Right:} Plot from our implementation during fourth cardiac cycle. Our implementation seems to have less of a dicrotic notch after the peak pressure in the cardiac cycle.}
+	\caption{Surface plot of the pressure along the tube with resistance boundary condition for one cardiac period. \textbf{Left:} Plot from Olufsen's thesis during fourth cardiac cycle. \textbf{Right:} Plot from our implementation during fourth cardiac cycle.}
 \end{figure}
 
 \begin{figure}[ht]
@@ -187,7 +177,7 @@ For future ease of use, Matlab was used as the coding interface. This will allow
 
 \pagebreak
 
-\subsection{Olufsen Implementation}
+\subsection{Case-Studies Using Olufsen's Version of the Code}
 As you know, we were able to get in touch with Olufsen, and she generously sent us her code via e-mail. We were able to compile, run, and post process her code. Because our code is not to the point where we can investigate some of the things we were hoping to, we modified her code in certain ways to display some interesting things. We investigated the following things:
 
 \begin{itemize}
@@ -211,11 +201,6 @@ These studies produced:
 	\label{rootimpedance}
 %		\includegraphics{rootimpedance}
 \end{figure}
-
-\begin{wrapfigure}{r}{0.5\textwidth}
-	\label{fulltree}
-		\includegraphics[width=2in]{fulltree}
-\end{wrapfigure}
 
 \section{Conclusion and Discussion}
 We have learned an immense amount from this exercise, both from a development point of view and a cardiovascular biomechanics view. We now understand some complications that may arise when attempting to imitate another person's work. We made the decision to go ahead and use the schemes that Olufsen was using assuming they were consistent, well documented, and working. This may not always be the case, and looking back, we realize it may have been a lot simpler and easier to bug/write our code had we developed our own discretization scheme or method. 
