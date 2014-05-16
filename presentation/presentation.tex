@@ -1,0 +1,170 @@
+\documentclass{beamer}
+\usepackage{amsmath, amssymb, amsbsy}
+\usepackage{graphicx, subfigure}
+%\usepackage[margin=1in,nohead]{geometry}
+%\usepackage{siunitx}
+%\usepackage{url}
+%\usepackage{cite}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{12pt}
+
+\newcommand{\uv}[1]{\ensuremath{{\hat{#1}}}} % for unit vector
+\newcommand{\abs}[1]{\left| #1 \right|} % for absolute value
+\newcommand{\avg}[1]{\left< #1 \right>} % for average
+\let\underdot=\d % rename builtin command \d{} to \underdot{}
+\renewcommand{\d}[2]{\frac{d #1}{d #2}} % for derivatives
+\newcommand{\dd}[2]{\frac{d^2 #1}{d #2^2}} % for double derivatives
+\newcommand{\pd}[2]{\frac{\partial #1}{\partial #2}} % for partial derivatives
+\newcommand{\pdd}[2]{\frac{\partial^2 #1}{\partial #2^2}} % for double partial derivatives
+\newcommand{\pdc}[3]{\left( \frac{\partial #1}{\partial #2}
+\right)_{#3}} % for thermodynamic partial derivatives
+\newcommand{\ket}[1]{\left| #1 \right>} % for Dirac bras
+\newcommand{\bra}[1]{\left< #1 \right|} % for Dirac kets
+\newcommand{\braket}[2]{\left< #1 \vphantom{#2} \right|\left. #2 \vphantom{#1} \right>} % for Dirac brackets
+\newcommand{\matrixel}[3]{\left< #1 \vphantom{#2#3} \right|#2 \left| #3 \vphantom{#1#2} \right>} % for Dirac matrix elements
+\newcommand{\grad}[1]{\gv{\nabla} #1} % for gradient
+\let\divsymb=\div % rename builtin command \div to \divsymb
+\renewcommand{\div}[1]{\gv{\nabla} \cdot #1} % for divergence
+\newcommand{\curl}[1]{\gv{\nabla} \times #1} % for curl
+\let\baraccent=\= % rename builtin command \= to \baraccent
+\newcommand{\partder}[2]{\frac{\partial #1}{\partial #2}}
+\newcommand{\material}[2]{\frac{D #1}{D #2}}
+\newcommand{\tensor}[1]{\bar{\bar{#1}}}
+
+\title{Implementation of One-D Vascular Model using Structured Tree Outflow Conditions}
+\author{Alex Baelde, Adam Updegrove, Debanjan Mukherjee}
+
+\begin{document}
+
+\begin{frame}
+\maketitle
+\end{frame}
+
+\begin{frame}{One-dimensional flow of blood - governing equations}
+
+\end{frame}
+
+\begin{frame}{Project goals}
+
+\end{frame}
+
+\begin{frame}
+	\begin{center}
+		\Large{\textbf{Numerical Solution $\&$ Development of a Code}}
+	\end{center}
+\end{frame}
+
+\begin{frame}{Hyperbolic system and finite difference discretization}
+
+\end{frame}
+
+\begin{frame}{Inflow profile and inlet boundary condition}
+
+\end{frame}
+
+\begin{frame}{The structured tree}
+
+\end{frame}
+
+\begin{frame}{Structured tree geometry and impedance calculation}
+
+\end{frame}
+
+\begin{frame}{Outflow boundary condition using structured tree}
+
+\end{frame}
+
+\begin{frame}{Implementation using method of characteristics}
+
+\end{frame}
+
+\begin{frame}{Toy problem for comparison}
+
+\end{frame}
+
+\begin{frame}
+	\begin{center}
+		\Large{\textbf{Flow analysis: What information can we get from such 1-dimensional, reduced order models ?}}
+	\end{center}
+\end{frame}
+
+\begin{frame}{Wave reflection phenomena - comparison with Windkessel models}
+
+\end{frame}
+
+\begin{frame}{Varying terminal resistance of tree for flow regulation}
+
+\end{frame}
+
+\begin{frame}{Radius of large vessels - insights on stenosis/anuerysms ?}
+
+\end{frame}
+
+\begin{frame}{Concluding remarks}
+
+\end{frame}
+
+\end{document}
+%\begin{document}
+%\maketitle
+%\section{Introduction}
+%Using the paper reviewed in Journal Club, we attempted to implement the Structured Tree Outflow conditions for a One-D Vascular Model presented by Olufsen~\cite{olufsen}. The One-D model presented by Olufsen outlines a finite difference scheme for solving the Navier-Stokes equations; as such, we used this approach for implementation of our One-D model. We will briefly outline the purpose of using a Structured Tree model and the theory behind this implementation.%as well as potential points of error in the discretization.
+%We will then describe the process taken in implementing this code along with some issues encountered along the way. We will discuss the current state of our code as well as display some preliminary results of our implementation. Lastly, we will talk about a small study investigated using Olufsen's code. 
+%
+%\section{Theory}
+%
+%Modeling the human body, in the current state of being, is a complex and difficult process. Large 3D models that account for large portions of the human vasculature take immense amounts of computation time to solve for the flow within the body~\cite{someone}. On the other hand, smaller models that take into account the rest of the body as a set resistance or circuit (lumped parameter models) cannot accurately resolve the physiological wave reflections in the human vasculature~\cite{someone}. The Structured Tree One-D model lies somewhere in between the two complexities. It is a One-D model, so computational time is significantly decreases; in addition, the wave reflections of the human vasculature are captured because the impedance of the human body is modeled as an impedance based on frequency of the downstream vessels (The Structured Tree). %It is important to note that the formation of this tree, specifically the cut-off radius for the downstream vessels, is quite important for the solution. The effect of this cut-off radius is investigated later in the paper.
+%
+%As is commonly the case, blood is modeled as an incompressible, non-newtonian fluid. The navier-stokes equation of motion are therefore applied to the fluid. Starting with a simplified version of continuity, we get Equation~\eqref{continuity}, and the simplified conservation of momentum in the x direction we get Equation~\eqref{consxmomentum}.
+%
+%\begin{equation}
+%	\label{continuity}
+%	\partder{A}{t} + \partder{q}{x} = 0
+%\end{equation}
+%
+%\begin{equation}
+%	\label{consxmomentum}
+%	\partder{q}{t} + \partder{}{x}\Bigg(\frac{q^2}{A}\Bigg) + \frac{A}{p}\partder{p}{x} = -\frac{2R\pi \nu q}{\delta A}
+%\end{equation}
+%
+%These equations are discretized using a Two-Step Lax-Wendroff Richtmyer Discretization. The equations for this scheme are as follows/
+%
+%Talk about equation to relate pressure to area~\eqref{circ}
+%\begin{equation}
+%	\label{circ}
+%	\tau_\theta = \frac{r p_e}{h} = \frac{E_\theta}{1-\sigma_x\sigma_\theta}\frac{r-r_0}{r_0}
+%\end{equation}
+%
+%and it gives Equation \eqref{ptoarea}, and ~\eqref{solvedp}
+%
+%\begin{equation}
+%	\label{ptoarea}
+%	p-p_0 = \frac{4Eh}{3} \frac{r-r_0}{r*r_0}
+%\end{equation} 
+%
+%\begin{equation}
+%	p(x,t) - p_0 = \frac{4}{3} \frac{Eh}{r_0(x)} \Bigg[1 - \sqrt{\frac{A_0(x)}{A(x,t)}}\Bigg]
+%	\label{solvedp}
+%\end{equation}
+%
+%We found this to be an issue because the $p_0$ actually over constrains the problem and causes the solution to explode. Therefore, $p_0$ was taken to be zero for our implementation.\
+%
+%To get the impedance of the Structured Tree at the outflow, the impedance is calculated throughout the tree as a function of frequency. The following convolution integral describes the relationship between pressure, impedance, and flow. 
+%
+%\begin{equation}
+%p(x,t) = \frac{1}{T} \int_{-T/2}^{T/2} z(x,t-\tau) q(x,\tau) d\tau
+%\end{equation}
+%
+%The Inverse Fourier Transform of the impedance is taken in order to get the impedances as a function of time. These impedances are then used to couple the outflow condition to the solution by either using another Lax-Wendroff discretization or a method of Positive Characteristics. Because the method of Positive Characteristics is simpler and easier to explain, it will be described below. 
+%
+%\section{Methods}
+%\subsection{Our Implementation}
+%For future ease of use, Matlab was used as the coding interface. This will allow
+%
+%\subsection{Olufsen Implementation}
+%
+%\section{Conclusion and Discussion}
+%
+%\bibliographystyle{plain}
+%\bibliography{report}
