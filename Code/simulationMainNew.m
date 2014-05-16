@@ -700,7 +700,7 @@ for periodCount = 1:numPeriods
         nPeriod = timeCounter;
         if ( isMethodCharacteristics == 1 )
             if ( WindkesselType == 0 )
-                %[A,Q] = characteristicOutflow(nPeriod,yTree_T);
+                [A,Q] = characteristicOutflow(nPeriod,yTree_T);
             elseif ( WindkesselType == 1 )
                 [A,Q] = characteristicResistance(nPeriod);
             end

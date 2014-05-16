@@ -4,7 +4,7 @@ function Q1 = getFlowRateIn(a_T, a_CardOut, a_CardMax, a_CardPeriod)
 % flow model as presented by Olufsen and Peskin
 % Argument Definition:
 % a_T:          The time at which the flow rate is sought
-% a_CardOut:    Total cardiac output (in cc/sec)
+% a_CardOut:    Total cardiac output (in m^3/sec)
 % a_CardMax:    The instant of maximal cardiac output (in sec)
 % a_CardPeriod: The period of cardiac cycle (in sec)
 % Authors: Debanjan Mukherjee, Adam Updegrove, Alex Baelde

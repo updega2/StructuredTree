@@ -144,10 +144,12 @@ else
         numIter = numIter +1;
     end
     A_Q = Anew;
+    A = A_Q;
 end
+
         
 % Calculate Q_Q:
 %---------------
 
-Q_Q = getPressure(A_Q, R0, P0)*(1/Resistance);
+Q_Q = getPressure(A_Q, R0, P0)*(1/Rdistal);
 Q   = Q_Q;

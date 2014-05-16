@@ -47,7 +47,7 @@ extern "C" void impedance_driver_(int *tmstps, double *Period,
 				  double *ff1, double *ff2, double *ff3,
 				  double *rho, double *mu, 
                                   double *r_root, double *rmin,
-                                  double *y, double *Lr, double *Fr2, double *q, double *g);
+                                  double *y, double *Lr, double *Fr2, double *q, double *g, double *trmrst);
 
 /* Methods of class Tube, see arteries.h for description of this. */
 
@@ -65,7 +65,7 @@ Tube :: Tube (double Length,
               double topradius, double botradius,
               Tube *LeftDaughter, Tube *RightDaughter,
               double rmin, double points, int init, double K,
-              double f1, double f2, double f3):
+              double f1, double f2, double f3, double trmrst):
 	L(Length),
 	rtop(topradius),
 	rbot(botradius),
@@ -75,7 +75,8 @@ Tube :: Tube (double Length,
 	K_loss(K),
 	ff1(f1),
 	ff2(f2),
-	ff3(f3)
+	ff3(f3),
+    termresist(trmrst)
 {
   // Initialization of the basic parameters
   N	  = int(pts*L);
@@ -177,7 +178,7 @@ Tube :: Tube (double Length,
   {
     fprintf(stdout,"Calling f90 subroutines\n");
 
-    impedance_driver_(&tmstps,&Period,&ff1,&ff2,&ff3,&rho,&mu_pl,&rbot,&rmin,y,&Lr,&Fr2,&q,&g);
+    impedance_driver_(&tmstps,&Period,&ff1,&ff2,&ff3,&rho,&mu_pl,&rbot,&rmin,y,&Lr,&Fr2,&q,&g,&termresist);
     printf("Finished with f90 subroutines.\n\n");
 
     // Initialize the array pL used when determining the convolution
