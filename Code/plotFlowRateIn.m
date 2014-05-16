@@ -21,6 +21,6 @@ for k1 = 1:length(tVec)
 end
 
 figure()
-plot(tVec, qVec,'r','linewidth',2);
-xlabel('Time (s)','FontSize',12,'FontWeight','bold');
-ylabel('Cardiac Flow Rate (cc/s)','FontSize',12,'FontWeight','bold');
+plot(tVec, qVec,'black','linewidth',2);
+xlabel('Time (s)');
+ylabel('Cardiac Flow Rate (m^3/s)');
