@@ -30,7 +30,8 @@
 \let\baraccent=\= % rename builtin command \= to \baraccent
 \newcommand{\partder}[2]{\frac{\partial #1}{\partial #2}}
 \newcommand{\material}[2]{\frac{D #1}{D #2}}
-\newcommand{\tensor}[1]{\bar{\bar{#1}}}
+\newcommand{\tensor}[1]{\bar{#1}}
+\newcommand{\tensplus}[3]{\tensor{#1}_{#2}^{#3}}
 
 \title{Implementation of One-D Vascular Model using Structured Tree Outflow Conditions}
 \author{Alex Baelde, Adam Updegrove, Debanjan Mukherjee}
@@ -88,6 +89,24 @@ p(x,t) = \frac{1}{T} \int_{-T/2}^{T/2} z(x,t-\tau) q(x,\tau) d\tau
 \end{equation}
 
 The Inverse Fourier Transform of the impedance is taken in order to get the impedances as a function of time. These impedances are then used to couple the outflow condition to the solution by either using another Lax-Wendroff discretization or a method of Positive Characteristics. Because the method of Positive Characteristics is simpler and easier to explain, it will be described below. 
+
+\begin{equation} 
+	\label{discrete1}
+	\partder{}{x} \tensor{U} + \partder{}{t} \tensor{R}(\tensor{U}) = \tensor{U}
+\end{equation}
+
+
+This is discretized to be 
+
+\begin{equation}
+	\label{bigu1}
+	\tensplus{U}{j}{T+1} = \tensplus{U}{j}{T} - \frac{k}{h} \Bigg(\tensplus{R}{j+1/2}{T+1/2} - \tensplus{R}{j-1/2}{T+1/2} \Bigg) + \frac{k}{2} \Bigg(\tensplus{S}{j+1/2}{T+1/2} + \tensplus{S}{j-1/2}{T+1/2} \Bigg)
+\end{equation}
+
+\begin{equation}
+	\label{bigu2}
+	\tensplus{U}{j}{T+1/2} = \frac{\tensplus{U}{j+1/2}{T} + \tensplus{U}{j-1/2}{T}}{2} + \frac{k}{2h} \Bigg(-\tensplus{R}{j+1/2}{T} - \tensplus{R}{j-1/2}{T} \Bigg)  + \frac{k}{4} \Bigg(\tensplus{S}{j+1/2}{T} + \tensplus{S}{j-1/2}{T} \Bigg)
+\end{equation}
 
 \subsection{Structured Tree}
 Our implementation of the structured tree actually varies slightly from Olufsen's implementation. In her code, Olufsen runs through each vessel individually and calculates the radius of the vessel based on Equation~\eqref{radius}. She retains no structure of the vessels within the tree and recalculates all this information for each structured tree.
