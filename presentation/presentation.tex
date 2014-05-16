@@ -6,6 +6,9 @@
 %\usepackage{url}
 %\usepackage{cite}
 
+\usepackage{graphicx} % Allows including images
+\usepackage{booktabs} % Allows the use of \toprule, \midrule and \bottomrule in tables
+
 \setlength{\parindent}{0pt}
 \setlength{\parskip}{12pt}
 
@@ -30,58 +33,183 @@
 \let\baraccent=\= % rename builtin command \= to \baraccent
 \newcommand{\partder}[2]{\frac{\partial #1}{\partial #2}}
 \newcommand{\material}[2]{\frac{D #1}{D #2}}
-\newcommand{\tensor}[1]{\bar{\bar{#1}}}
+\newcommand{\tensor}[1]{\bar{#1}}
+\newcommand{\tensplus}[3]{\tensor{#1}_{#2}^{#3}}
 
-\title{Implementation of One-D Vascular Model using Structured Tree Outflow Conditions}
-\author{Alex Baelde, Adam Updegrove, Debanjan Mukherjee}
+\mode<presentation> {
+
+% The Beamer class comes with a number of default slide themes
+% which change the colors and layouts of slides. Below this is a list
+% of all the themes, uncomment each in turn to see what they look like.
+
+%\usetheme{Berkeley}
+
+\usetheme{Madrid}
+
+}
+
+%----------------------------------------------------------------------------------------
+%	TITLE PAGE
+%----------------------------------------------------------------------------------------
+
+\title[]{Implementation of 1-D Vascular Model using Structured Tree Outflow Conditions} % The short title appears at the bottom of every slide, the full title is only on the title page
+
+\author{Alex Baelde, Adam Updegrove, Debanjan Mukherjee} % Your name
+%\institute[UCLA] % Your institution as it will appear on the bottom of every slide, may be shorthand to save space
+%{
+%University of California \\ % Your institution for the title page
+%\medskip
+%\textit{john@smith.com} % Your email address
+%}
+\date{\today} % Date, can be changed to a custom date
 
 \begin{document}
 
 \begin{frame}
-\maketitle
-\end{frame}
-
-\begin{frame}{One-dimensional flow of blood - governing equations}
-
-\end{frame}
-
-\begin{frame}{Project goals}
-
+\titlepage % Print the title page as the first slide
 \end{frame}
 
 \begin{frame}
-	\begin{center}
-		\Large{\textbf{Numerical Solution $\&$ Development of a Code}}
-	\end{center}
+\frametitle{Overview} % Table of contents slide, comment this block out to remove it
+\tableofcontents % Throughout your presentation, if you choose to use \section{} and \subsection{} commands, these will automatically be printed on this slide as an overview of your presentation
 \end{frame}
+
+\section{Introduction}
+
+\subsection{Project Goals}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}{Project Goals}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}{One-dimensional flow of blood - governing equations}
+	\begin{block}{Continuity}
+		\begin{equation}
+			\label{continuity}
+			\partder{A}{t} + \partder{q}{x} = 0
+		\end{equation}
+	\end{block}
+
+	\begin{block}{Conservation of X Momentum}
+		\begin{equation}
+			\label{consxmomentum}
+			\partder{q}{t} + \partder{}{x}\Bigg(\frac{q^2}{A}\Bigg) + \frac{A}{p}\partder{p}{x} = -\frac{2R\pi \nu q}{\delta A}
+		\end{equation}
+	\end{block}
+	
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Implementation}
+\subsection{Discretization}
+
+\begin{frame}{Numerical Solution $\&$ Development of a Code}
+		\begin{block}
+		A Two-Step Lax-Wendroff (Richtmyer) scheme is used. Equations~\ref{continuity} and \ref{consxmomentum} can be written in the following form:
+
+		\begin{equation} 
+			\label{discrete1}
+			\partder{}{t} \tensor{U} + \partder{}{x} \tensor{R}(\tensor{U}) = \tensor{S}
+		\end{equation}
+		\end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}{Hyperbolic system and finite difference discretization}
 
+\begin{enumerate}
+	\item
+	\begin{equation}
+		\label{bigu1}
+		\tensplus{U}{j}{T+1} = \tensplus{U}{j}{T} - \frac{k}{h} \Bigg(\tensplus{R}{j+1/2}{T+1/2} - \tensplus{R}{j-1/2}{T+1/2} \Bigg) + \frac{k}{2} \Bigg(\tensplus{S}{j		+1/2}{T+1/2} + \tensplus{S}{j-1/2}{T+1/2} \Bigg)
+	\end{equation}
+	
+	\item
+		\begin{align*}
+		\tensplus{U}{j}{T+1/2} &= \frac{\tensplus{U}{j+1/2}{T} + \tensplus{U}{j-1/2}{T}}{2} + \frac{k}{2h} \Bigg(-\tensplus{R}{j+1/2}{T} - \tensplus{R}{j-1/2}{T} \Bigg)\\ 		&+ \frac{k}{4} \Bigg(\tensplus{S}{j+1/2}{T} + \tensplus{S}{j-1/2}{T} \Bigg)
+		\end{align*}
+\end{enumerate}
+
 \end{frame}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Inflow}
 \begin{frame}{Inflow profile and inlet boundary condition}
 
+\begin{figure}[ht]
+	\includegraphics[width=3.75in]{inflow}
+	\label{inflower}
+	\caption{The inflow profile from measured data in $m^3/s$. The curve is measured at the upper ascending aorta using magnetic resonance.}
+\end{figure}
+
 \end{frame}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Outflow}
 \begin{frame}{The structured tree}
-
+	\begin{block}{Olufsen's}
+		She retains no structure of the vessels within the tree and recalculates all this information for each structured tree.	
+		\begin{equation}
+			\label{radius}
+			(r_0)_(n,k) = R_{root} \alpha^k\beta^{n-k}
+		\end{equation}
+	\end{block}
+	
+	\begin{block}{Our's}
+		We retain a structure of the tree by a vector of nodes containing certain information about the tree. 
+		\begin{equation}
+			\begin{bmatrix}
+			Daughter \: 1 \; & Daughter \: 2 \; & Parent \; & Radius 
+			\end{bmatrix}
+		\end{equation}
+	\end{block}
+		
 \end{frame}
 
-\begin{frame}{Structured tree geometry and impedance calculation}
-
-\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}{Outflow boundary condition using structured tree}
+\begin{block}{Method of Characteristics}
+	 \begin{equation}
+ 		\label{characteristics}
+ 		\Gamma_{+/-}\; : A_Q - A_{R/S} + \frac{Q_Q - Q_{R/S}}{-(Q_{R/S}/A_{R/S}) + C_R} = H_{R/S}^{+/-} \Delta t
+	\end{equation}
+\end{block}
+
+\begin{figure}[ht]
+	\centering
+	\label{characteristicplot}
+	\includegraphics[width=2in]{characterplot}
+\end{figure}
 
 \end{frame}
 
-\begin{frame}{Implementation using method of characteristics}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Results}
 
-\end{frame}
-
+\subsection{Our Implementation}
 \begin{frame}{Toy problem for comparison}
 
+\begin{block}{Single Tube with Resistance Boundary Condition}
+	The pressure profile follows the same curve. The dicrotic notch is less visible in our implementation, and the magnitude is slightly higher. 
+\end{block}
+
+\begin{figure}[ht]
+	\centering
+	\includegraphics[width=4.5in]{pplot}
+	\label{ours}
+\end{figure}
+
 \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}
 	\begin{center}
@@ -89,82 +217,30 @@
 	\end{center}
 \end{frame}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Olufsen Implementation}
+
 \begin{frame}{Wave reflection phenomena - comparison with Windkessel models}
 
 \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}{Varying terminal resistance of tree for flow regulation}
 
 \end{frame}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \begin{frame}{Radius of large vessels - insights on stenosis/anuerysms ?}
 
 \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Discussion and Conclusion}
 
 \begin{frame}{Concluding remarks}
 
 \end{frame}
 
 \end{document}
-%\begin{document}
-%\maketitle
-%\section{Introduction}
-%Using the paper reviewed in Journal Club, we attempted to implement the Structured Tree Outflow conditions for a One-D Vascular Model presented by Olufsen~\cite{olufsen}. The One-D model presented by Olufsen outlines a finite difference scheme for solving the Navier-Stokes equations; as such, we used this approach for implementation of our One-D model. We will briefly outline the purpose of using a Structured Tree model and the theory behind this implementation.%as well as potential points of error in the discretization.
-%We will then describe the process taken in implementing this code along with some issues encountered along the way. We will discuss the current state of our code as well as display some preliminary results of our implementation. Lastly, we will talk about a small study investigated using Olufsen's code. 
-%
-%\section{Theory}
-%
-%Modeling the human body, in the current state of being, is a complex and difficult process. Large 3D models that account for large portions of the human vasculature take immense amounts of computation time to solve for the flow within the body~\cite{someone}. On the other hand, smaller models that take into account the rest of the body as a set resistance or circuit (lumped parameter models) cannot accurately resolve the physiological wave reflections in the human vasculature~\cite{someone}. The Structured Tree One-D model lies somewhere in between the two complexities. It is a One-D model, so computational time is significantly decreases; in addition, the wave reflections of the human vasculature are captured because the impedance of the human body is modeled as an impedance based on frequency of the downstream vessels (The Structured Tree). %It is important to note that the formation of this tree, specifically the cut-off radius for the downstream vessels, is quite important for the solution. The effect of this cut-off radius is investigated later in the paper.
-%
-%As is commonly the case, blood is modeled as an incompressible, non-newtonian fluid. The navier-stokes equation of motion are therefore applied to the fluid. Starting with a simplified version of continuity, we get Equation~\eqref{continuity}, and the simplified conservation of momentum in the x direction we get Equation~\eqref{consxmomentum}.
-%
-%\begin{equation}
-%	\label{continuity}
-%	\partder{A}{t} + \partder{q}{x} = 0
-%\end{equation}
-%
-%\begin{equation}
-%	\label{consxmomentum}
-%	\partder{q}{t} + \partder{}{x}\Bigg(\frac{q^2}{A}\Bigg) + \frac{A}{p}\partder{p}{x} = -\frac{2R\pi \nu q}{\delta A}
-%\end{equation}
-%
-%These equations are discretized using a Two-Step Lax-Wendroff Richtmyer Discretization. The equations for this scheme are as follows/
-%
-%Talk about equation to relate pressure to area~\eqref{circ}
-%\begin{equation}
-%	\label{circ}
-%	\tau_\theta = \frac{r p_e}{h} = \frac{E_\theta}{1-\sigma_x\sigma_\theta}\frac{r-r_0}{r_0}
-%\end{equation}
-%
-%and it gives Equation \eqref{ptoarea}, and ~\eqref{solvedp}
-%
-%\begin{equation}
-%	\label{ptoarea}
-%	p-p_0 = \frac{4Eh}{3} \frac{r-r_0}{r*r_0}
-%\end{equation} 
-%
-%\begin{equation}
-%	p(x,t) - p_0 = \frac{4}{3} \frac{Eh}{r_0(x)} \Bigg[1 - \sqrt{\frac{A_0(x)}{A(x,t)}}\Bigg]
-%	\label{solvedp}
-%\end{equation}
-%
-%We found this to be an issue because the $p_0$ actually over constrains the problem and causes the solution to explode. Therefore, $p_0$ was taken to be zero for our implementation.\
-%
-%To get the impedance of the Structured Tree at the outflow, the impedance is calculated throughout the tree as a function of frequency. The following convolution integral describes the relationship between pressure, impedance, and flow. 
-%
-%\begin{equation}
-%p(x,t) = \frac{1}{T} \int_{-T/2}^{T/2} z(x,t-\tau) q(x,\tau) d\tau
-%\end{equation}
-%
-%The Inverse Fourier Transform of the impedance is taken in order to get the impedances as a function of time. These impedances are then used to couple the outflow condition to the solution by either using another Lax-Wendroff discretization or a method of Positive Characteristics. Because the method of Positive Characteristics is simpler and easier to explain, it will be described below. 
-%
-%\section{Methods}
-%\subsection{Our Implementation}
-%For future ease of use, Matlab was used as the coding interface. This will allow
-%
-%\subsection{Olufsen Implementation}
-%
-%\section{Conclusion and Discussion}
-%
-%\bibliographystyle{plain}
-%\bibliography{report}

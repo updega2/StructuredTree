@@ -1,1 +1,11 @@
 \beamer@endinputifotherversion {3.26pt}
+\beamer@sectionintoc {1}{Introduction}{3}{0}{1}
+\beamer@subsectionintoc {1}{1}{Project Goals}{3}{0}{1}
+\beamer@sectionintoc {2}{Implementation}{5}{0}{2}
+\beamer@subsectionintoc {2}{1}{Discretization}{5}{0}{2}
+\beamer@subsectionintoc {2}{2}{Inflow}{7}{0}{2}
+\beamer@subsectionintoc {2}{3}{Outflow}{8}{0}{2}
+\beamer@sectionintoc {3}{Results}{10}{0}{3}
+\beamer@subsectionintoc {3}{1}{Our Implementation}{10}{0}{3}
+\beamer@subsectionintoc {3}{2}{Olufsen Implementation}{12}{0}{3}
+\beamer@sectionintoc {4}{Discussion and Conclusion}{15}{0}{4}

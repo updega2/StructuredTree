@@ -65,7 +65,7 @@ For the inflow into the 1-D model, a mathematical model fit to measured data was
 	\centering
 	\includegraphics{inflow}
 	\label{inflower}
-	\caption{The inflow profile from measured data in cc/s. The curve is measured at the upper ascending aorta using magnetic resonance.}
+	\caption{The inflow profile from measured data in $m^3/s$. The curve is measured at the upper ascending aorta using magnetic resonance.}
 \end{figure}
 
 
@@ -86,7 +86,7 @@ For implementation of these non-linear equations, a Two-Step Lax-Wendroff (Richt
 
 \begin{equation} 
 	\label{discrete1}
-	\partder{}{x} \tensor{U} + \partder{}{t} \tensor{R}(\tensor{U}) = \tensor{U}
+	\partder{}{t} \tensor{U} + \partder{}{x} \tensor{R}(\tensor{U}) = \tensor{S}
 \end{equation}
 
 This equation is than discretized into the two equations two be solved over the interior domain. 
