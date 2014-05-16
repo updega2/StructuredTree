@@ -13,6 +13,9 @@ Qdata4 = Qdata4.*10^6;
 
 Q = cat(1,Qdata1,Qdata2,Qdata3,Qdata4);
 Tvec = linspace(0, Tcard, nsteps);
+Tvec = Tvec + Tcard*ones(size(Tvec));
+Tvec = Tvec + Tcard*ones(size(Tvec));
+Tvec = Tvec + Tcard*ones(size(Tvec));
 
 figure()
 X = surf(Xvec,Tvec,Qdata1,'LineStyle','none');

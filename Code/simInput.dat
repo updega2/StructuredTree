@@ -57,7 +57,7 @@ Length-To-Radius-Ratio
 Use-The-Material-Exponential-Model?
 1
 Use-The-Material-Exponential-Model-For-Tree?
-0
+1
 Use-All-Factors-And-Tweaks-From-Olufsen-Code?
 0
 Use-Matlab-Fsolve-For-Nonlinear-Solution?
@@ -65,7 +65,7 @@ Use-Matlab-Fsolve-For-Nonlinear-Solution?
 Use-Method-Of-Characteristics-For-Outflow?
 1
 Use-Shifted-Impedance-Calculation-From-Olufsen-Code?
-0
+1
 Distal-Resistance-For-Windkessel-Models
 33330500
 Proximal-Resistance-For-Windkessel-Models
@@ -73,5 +73,5 @@ Proximal-Resistance-For-Windkessel-Models
 Total-Compliance-For-Windkessel-Models
 0.0
 Windkessel-Model-Type
-1
+0
 End-Of-File

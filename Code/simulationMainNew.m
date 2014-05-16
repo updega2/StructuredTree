@@ -351,13 +351,15 @@ if ( isShiftedImpedanceMethod == 0 )
     end
     zTree_F(nsteps/2) = temp;
     
-    if isCopyOlufsen
-        zTree_T = real(ifft(fftshift(zTree_F)/Tcard,'symmetric'));
-    else
-        zTree_T = real(ifft(zTree_F,'symmetric'));
-    end
+        
+    yTree_F = 1./real(zTree_F) + 1i*(1./real(zTree_F));
     
-    yTree_T = 1./zTree_T;
+    if isCopyOlufsen
+        yTree_T = real(ifft(fftshift(yTree_F)/Tcard,'symmetric'));
+    else
+        yTree_T = real(ifft(yTree_F,'symmetric'));
+    end
+
     %%%% ------------
     %%%% END OLD CODE
     %%%% ------------
@@ -385,9 +387,10 @@ elseif ( isShiftedImpedanceMethod == 1 )
     
     zTree_F((nsteps/2)+1) = temp;
     
-    zTree_T = real(ifft(zTree_F,'symmetric'));
+    yTree_F = 1./zTree_F;
     
-    yTree_T = 1./zTree_T;
+    yTree_T = real(ifft(yTree_F,'symmetric'));
+
     %%%% ------------
     %%%% END NEW CODE
     %%%% ------------
