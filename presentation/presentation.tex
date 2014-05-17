@@ -121,7 +121,8 @@
 \subsection{Discretization}
 
 \begin{frame}{Numerical Solution $\&$ Development of a Code}
-		\begin{block}
+\footnotesize
+		\begin{block}{}
 		A Two-Step Lax-Wendroff (Richtmyer) scheme is used. Equations~\ref{continuity} and \ref{consxmomentum} can be written in the following form:
 
 		\begin{equation} 
@@ -129,24 +130,30 @@
 			\partder{}{t} \tensor{U} + \partder{}{x} \tensor{R}(\tensor{U}) = \tensor{S}
 		\end{equation}
 		\end{block}
+		
+			\begin{equation*}
+		\label{bigu1}
+		\tensplus{U}{j}{T+1} = \tensplus{U}{j}{T} - \frac{k}{h} \Bigg(\tensplus{R}{j+1/2}{T+1/2} - \tensplus{R}{j-1/2}{T+1/2} \Bigg) + \frac{k}{2} \Bigg(\tensplus{S}{j		+1/2}{T+1/2} + \tensplus{S}{j-1/2}{T+1/2} \Bigg)
+	\end{equation*}
+	
+		\begin{align*}
+		\tensplus{U}{j}{T+1/2} &= \frac{\tensplus{U}{j+1/2}{T} + \tensplus{U}{j-1/2}{T}}{2} + \frac{k}{2h} \Bigg(-\tensplus{R}{j+1/2}{T} - \tensplus{R}{j-1/2}{T} \Bigg)\\ 		&+ \frac{k}{4} \Bigg(\tensplus{S}{j+1/2}{T} + \tensplus{S}{j-1/2}{T} \Bigg)
+		\end{align*}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}{Hyperbolic system and finite difference discretization}
+\footnotesize
 
-\begin{enumerate}
-	\item
-	\begin{equation}
+	\begin{equation*}
 		\label{bigu1}
 		\tensplus{U}{j}{T+1} = \tensplus{U}{j}{T} - \frac{k}{h} \Bigg(\tensplus{R}{j+1/2}{T+1/2} - \tensplus{R}{j-1/2}{T+1/2} \Bigg) + \frac{k}{2} \Bigg(\tensplus{S}{j		+1/2}{T+1/2} + \tensplus{S}{j-1/2}{T+1/2} \Bigg)
-	\end{equation}
+	\end{equation*}
 	
-	\item
 		\begin{align*}
 		\tensplus{U}{j}{T+1/2} &= \frac{\tensplus{U}{j+1/2}{T} + \tensplus{U}{j-1/2}{T}}{2} + \frac{k}{2h} \Bigg(-\tensplus{R}{j+1/2}{T} - \tensplus{R}{j-1/2}{T} \Bigg)\\ 		&+ \frac{k}{4} \Bigg(\tensplus{S}{j+1/2}{T} + \tensplus{S}{j-1/2}{T} \Bigg)
 		\end{align*}
-\end{enumerate}
 
 \end{frame}
 
@@ -221,6 +228,19 @@
 
 \end{frame}
 
+\begin{frame}{Toy problem for comparison}
+\begin{block}{Single Tube with Structured Tree Boundary Condition}
+	The pressure profile follows the same curve. The dicrotic notch is less visible in our implementation, and the magnitude is slightly higher. 
+\end{block}
+\vspace{-1.0cm}
+\begin{figure}[ht]
+	\centering
+	\includegraphics[width=5.0in]{qplot-crop.pdf}
+	\label{ours}
+\end{figure}
+
+\end{frame}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}
@@ -234,17 +254,56 @@
 
 \begin{frame}{Wave reflection phenomena - comparison with Windkessel models}
 
+\begin{center}
+\textbf{This was discussed in detail during the Journal Club review of the paper}
+\end{center}
+
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}{Varying terminal resistance of tree for flow regulation}
 
+	\begin{columns}
+		\begin{column}[r]{5.5cm}
+			\includegraphics[width=5.5cm]{pcarotid.pdf}
+		\end{column}
+		\begin{column}[l]{5.5cm}
+			\includegraphics[width=5.5cm]{qcarotid.pdf}
+		\end{column}
+	\end{columns}
+	
+	\begin{center}
+		\footnotesize
+		\textbf{increased terminal resistance from 0 (in green) to $\mathbf{230000\,\,dynes-s/cm^5}$ (in blue) in all vascular beds, and then reduced terminal resistance to 0 in R. Carotid to regulate flow (in red).}
+	\end{center}
+
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\begin{frame}{Radius of large vessels - insights on stenosis/anuerysms ?}
+\begin{frame}{Radius of large vessels - insights on stenosis/aneurysms ?}
+
+	\begin{columns}
+		\begin{column}[r]{5.5cm}
+			\centering
+			\includegraphics[width=3.75cm]{fulltree.png}\\
+			\textbf{\footnotesize{A modified version of the vascular tree for studying vessel radius effects}}
+		\end{column}
+		\begin{column}[l]{5.5cm}
+			\begin{block}{\footnotesize{Modifications to the vessel radii}}
+		
+			\end{block}
+		\end{column}
+	\end{columns}
+
+\end{frame}
+
+\begin{frame}{Radius of large vessels - insights on stenosis/aneurysms}
+
+	\begin{center}
+	\includegraphics[width=11.0cm]{aortawavereflections.pdf}
+	\end{center}
 
 \end{frame}
 

@@ -35,20 +35,24 @@
 \headcommand {\beamer@framepages {10}{10}}
 \headcommand {\slideentry {3}{1}{2}{11/11}{Our Implementation}{0}}
 \headcommand {\beamer@framepages {11}{11}}
-\headcommand {\beamer@subsectionentry {0}{3}{2}{12}{Olufsen Implementation}}\headcommand {\beamer@subsectionpages {10}{11}}
-\headcommand {\slideentry {3}{2}{1}{12/12}{Olufsen Implementation}{0}}
+\headcommand {\slideentry {3}{1}{3}{12/12}{Our Implementation}{0}}
 \headcommand {\beamer@framepages {12}{12}}
-\headcommand {\slideentry {3}{2}{2}{13/13}{Olufsen Implementation}{0}}
+\headcommand {\beamer@subsectionentry {0}{3}{2}{13}{Olufsen Implementation}}\headcommand {\beamer@subsectionpages {10}{12}}
+\headcommand {\slideentry {3}{2}{1}{13/13}{Olufsen Implementation}{0}}
 \headcommand {\beamer@framepages {13}{13}}
-\headcommand {\slideentry {3}{2}{3}{14/14}{Olufsen Implementation}{0}}
+\headcommand {\slideentry {3}{2}{2}{14/14}{Olufsen Implementation}{0}}
 \headcommand {\beamer@framepages {14}{14}}
-\headcommand {\sectionentry {4}{Discussion and Conclusion}{15}{Discussion and Conclusion}{0}}
-\headcommand {\beamer@sectionpages {10}{14}}
-\headcommand {\beamer@subsectionpages {12}{14}}
-\headcommand {\slideentry {4}{0}{4}{15/15}{}{0}}
+\headcommand {\slideentry {3}{2}{3}{15/15}{Olufsen Implementation}{0}}
 \headcommand {\beamer@framepages {15}{15}}
-\headcommand {\beamer@partpages {1}{15}}
-\headcommand {\beamer@subsectionpages {15}{15}}
-\headcommand {\beamer@sectionpages {15}{15}}
-\headcommand {\beamer@documentpages {15}}
-\headcommand {\def \inserttotalframenumber {15}}
+\headcommand {\slideentry {3}{2}{4}{16/16}{Olufsen Implementation}{0}}
+\headcommand {\beamer@framepages {16}{16}}
+\headcommand {\sectionentry {4}{Discussion and Conclusion}{17}{Discussion and Conclusion}{0}}
+\headcommand {\beamer@sectionpages {10}{16}}
+\headcommand {\beamer@subsectionpages {13}{16}}
+\headcommand {\slideentry {4}{0}{5}{17/17}{}{0}}
+\headcommand {\beamer@framepages {17}{17}}
+\headcommand {\beamer@partpages {1}{17}}
+\headcommand {\beamer@subsectionpages {17}{17}}
+\headcommand {\beamer@sectionpages {17}{17}}
+\headcommand {\beamer@documentpages {17}}
+\headcommand {\def \inserttotalframenumber {17}}
