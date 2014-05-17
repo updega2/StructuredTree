@@ -86,10 +86,10 @@ This is now a hyperbolic set of equations. This can be discretized into the two 
 		\label{bigu2}
 \end{align}
 
-where $k$ is $\Delta x$ and $h$ is $\Delta t$. is In terms of implementing the equation, the very broad algorithm ~\ref{lag} demonstrates the implementation of the 1-D code. 
+where $k$ is $\Delta x$ and $h$ is $\Delta t$. is In terms of implementing the equation, the very broad algorithm ~\ref{alg:codealgorithm} demonstrates the implementation of the 1-D code. 
 
 \begin{algorithm}
-\label{alg}
+\label{alg:codealgorithm}
 \caption{Implementation}\label{euclid}
 \begin{algorithmic}[1]
 \State Set up problem based on user input.
@@ -182,31 +182,39 @@ As you know, we were able to get in touch with Olufsen, and she generously sent 
 
 \begin{itemize}
 	\item
-		Effect of changing geometries on wave reflections
-	\item
 		Imposing a root impedance in certain arteries
+	\item
+		Effect of changing geometries on wave reflections	
 \end{itemize}
 
-These studies produced:
-
+1. Imposing resistive outflow boundary conditions at a particular location is a method we used to concentrate the blood supply at desired spots. This allowed us to observe the influence on pressure and flow variations within the model. An arteriole resistance value was derived from~\cite{chung2012pressure}, assessed at $230,000.0 dynes/cm^5$, and applied at targeted outflow locations to observe repercussions on the whole model.
 
 \begin{figure}
+\centering
+	\label{rootimpedance}
+		\includegraphics[width=0.85\textwidth]{qpcarotid}
+		\caption{The green line is zero root impedance. The blue line is a high root impedance everywhere. The red line is a high root impedance everywhere except the carotid where the root impedance is zero}
+\end{figure}There seem to be little to no impact on wave reflections; additionally, the flow into the targeted carotid artery is increased slightly as expected. 
+
+2. The geometry of the aorta in the 1-D model was modified slightly to analyze the effect of both wave reflections in flow and pressure. In one case, the diameter of the distal diameter of the aorta was reduced by 28\% from 1.14 cm to 1.0 cm to represent a possible stenosis. In another case, the diameter in the middle of the  descending aorta was increased 41\% from 0.73 cm to 1.03 cm to represent a possible aneurysm. In Figure ~\ref{aorta}, the plots of the three cases are displayed side by side. There is an increased amount of wave reflections in the case where the diameter is increased to a larger size representing the aneurysm.  The pressure in this case also increases as is expected in a geometry of increasing area. 
+
+\begin{figure}[ht]
 	\centering
 	\label{aorta}
-		\includegraphics[width=6.5in]{aortawavereflections}
-		\caption{This figure shows the effect of changing geometries on wave reflections.\textbf{Left:} \textbf{Middle:} \textbf{Right:}. There is a noticeable i			ncrease in wave reflections within the aorta of increased diameter at the center.}
+	\includegraphics[width=6.5in]{aortawavereflections}
+	\caption{This figure shows the effect of changing geometries on wave reflections.There is a noticeable increase in wave reflections within the aorta of increased diameter at the center.}
 \end{figure}
 
-\begin{figure}
-	\label{rootimpedance}
-%		\includegraphics{rootimpedance}
-\end{figure}
+\pagebreak
 
 \section{Conclusion and Discussion}
 We have learned an immense amount from this exercise, both from a development point of view and a cardiovascular biomechanics view. We now understand some complications that may arise when attempting to imitate another person's work. We made the decision to go ahead and use the schemes that Olufsen was using assuming they were consistent, well documented, and working. This may not always be the case, and looking back, we realize it may have been a lot simpler and easier to bug/write our code had we developed our own discretization scheme or method. 
 
-Also talk about what we learned from Olufsen's code
+We have also learned some interesting things from the case study using Olufsen's version of the code. We investigated the effect of increasing the root impedance everywhere except at one target location. This did not have a significant effect on wave reflections, but it did alter the magnitude of flow at the investigated region. This shows that we can influence flow to a certain location without altering the flow form significantly in this area.
 
+We found interesting results for an aorta of changing geometry to represent an aneurysm or a stenosis. We noticed an expected increase in pressure in the aorta of increased diameter and decrease in pressure in the aorta of decreasing diameter. The wave reflections also seemed to be increased in the aorta of increased diameter, maybe due to the increased backflow and recirculation. 
+
+\pagebreak
 \bibliographystyle{plain}
 \bibliography{report}
 
